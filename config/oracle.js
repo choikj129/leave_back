@@ -1,9 +1,9 @@
 let db = require("oracledb")
 db.initOracleClient({libDir:"C:\\oracle\\instantclient_21_7"})
 db.outFormat = db.OUT_FORMAT_OBJECT
-let conn
+let conn = null;
 module.exports = {
-    init (){
+    init : () => {
         db.getConnection(
             {
                 user          : "ODN_GJCHOI",
@@ -15,12 +15,12 @@ module.exports = {
             }
         )
     },
-    select : async (query, params, callback) => {        
+    select : async (query, params, callback) => {
         await conn.execute(query, params, function(err, result){
             if (err){
                 callback(false)
-            }else{
-                callback(result.rows)
+            }else{                
+                callback(result.rows)                
             }
         })
     }
