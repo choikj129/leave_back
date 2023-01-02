@@ -10,8 +10,8 @@ router.get('/', function(req, res, next) {
 
 router.post('/',  async function(req, res, next) {
   params = {id : req.body.id, pw : req.body.pw}
-  await db.select("SELECT * FROM EMP WHERE 아이디=:id and 비밀번호=:pw", params, function(result){
-    if (!result) {
+  await db.select("SELECT * FROM EMP WHERE 아이디=:id and 비밀번호=:pw", params, function(result){    
+    if (!result || result.length == 0) {
       res.json({
         status : false,
         msg : "유효하지 않은 로그인 정보입니다."

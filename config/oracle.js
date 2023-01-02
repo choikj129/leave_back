@@ -1,14 +1,23 @@
 let db = require("oracledb")
-db.initOracleClient({libDir:"C:\\oracle\\instantclient_21_7"})
+let config = require("./exports/db_connect")
+/*
+    module.exports = {
+        "user": "username",
+        "password": "password",
+        "connectString": "IP:Port/DATABASE"
+    }
+*/
+
+db.initOracleClient({libDir:"C:\\oracle\\instantclient_21_8"})
 db.outFormat = db.OUT_FORMAT_OBJECT
 let conn = null;
 module.exports = {
     init : () => {
         db.getConnection(
             {
-                user          : "ODN_GJCHOI",
-                password      : "m1m2m3",
-                connectString : "192.168.10.12:41522/XE",
+                user          : config.user,
+                password      : config.password,
+                connectString : config.connectString,
             },
             function(err, connection){
                 conn = connection                                        
