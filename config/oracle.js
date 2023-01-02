@@ -20,18 +20,38 @@ module.exports = {
                 connectString : config.connectString,
             },
             function(err, connection){
-                conn = connection                                        
+                conn = connection
             }
         )
     },
     select : async (query, params, callback) => {
         await conn.execute(query, params, function(err, result){
             if (err){
+                console.error(err)
                 callback(false)
             }else{                
                 callback(result.rows)                
             }
         })
-    }
-    
+    },
+    insert : async (query, params, callback) => {
+        await conn.execute(query, params, function(err, result){
+            if (err){
+                console.error(err)
+                callback(false)
+            }else{                
+                callback(result.rows)                
+            }
+        })
+    },
+    insertBulk : async (query, params, callback) => {
+        await conn.executeMany(query, params, function(err, result){
+            if (err){
+                console.error(err)
+                callback(false)
+            }else{                
+                callback(result.rows)                
+            }
+        })
+    },
 }
