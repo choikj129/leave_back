@@ -1,5 +1,5 @@
 let db = require("oracledb")
-let config = require("./exports/db_connect")
+let config = require("./config/db_connect")
 /*
     module.exports = {
         "user": "username",
@@ -12,7 +12,7 @@ db.initOracleClient({libDir:"C:\\oracle\\instantclient_21_8"})
 db.outFormat = db.OUT_FORMAT_OBJECT
 let conn = null;
 module.exports = {
-    init : () => {
+    connection : (callback) => {
         db.getConnection(
             {
                 user          : config.user,
@@ -20,9 +20,17 @@ module.exports = {
                 connectString : config.connectString,
             },
             function(err, connection){
-                conn = connection
+                if (err) {
+                    callback(false, conn)
+                } else {
+                    conn = connection
+                    callback(true, conn)
+                }
             }
         )
+    },
+    close : () => {
+        conn.close()
     },
     select : async (query, params, callback) => {
         await conn.execute(query, params, function(err, result){
@@ -30,28 +38,34 @@ module.exports = {
                 console.error(err)
                 callback(false)
             }else{                
-                callback(result.rows)                
+                callback(true, result.rows)                
             }
         })
     },
-    insert : async (query, params, callback) => {
+    update : async (query, params, callback) => {
         await conn.execute(query, params, function(err, result){
             if (err){
                 console.error(err)
                 callback(false)
             }else{                
-                callback(result.rows)                
+                callback(true, result.rowsAffected)                
             }
         })
     },
-    insertBulk : async (query, params, callback) => {
+    updateBulk : async (query, params, callback) => {
         await conn.executeMany(query, params, function(err, result){
             if (err){
                 console.error(err)
                 callback(false)
             }else{                
-                callback(result.rows)                
+                callback(true, result.rowsAffected)
             }
         })
+    },
+    commit : () => {
+        conn.commit()
+    },
+    rollback : () => {
+        conn.rollback()
     },
 }

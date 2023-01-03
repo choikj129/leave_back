@@ -1,6 +1,6 @@
 let express = require('express');
 let router = express.Router();
-let dbconfig = require("../config/oracle")
+let dbconfig = require("../exports/oracle")
 
 /* GET home page. */
 router.get('/', function(req, res, next) {

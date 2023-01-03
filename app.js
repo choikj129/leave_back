@@ -4,10 +4,8 @@ let session = require('express-session');
 let path = require('path');
 let cookieParser = require('cookie-parser');
 let logger = require('morgan');
+let interceptor = require("./exports/interceptor")
 
-let db = require("./config/oracle")
-
-db.init()
 
 let indexRouter = require('./routes/index');
 let loginRouter = require('./routes/login');
@@ -35,11 +33,20 @@ app.use(
   })
 )
 
+app.use(function(req, res, next) {
+  const isSession = interceptor.session(req)
+
+  if (isSession) {
+    next()
+  } else {
+    res.json({status : false, msg : "no session", data : []})
+  }
+})
+
 app.use('/', indexRouter);
 app.use('/leave', leaveRouter);
 app.use('/login', loginRouter);
 app.use('/users', usersRouter);
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {  
