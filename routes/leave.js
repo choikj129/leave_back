@@ -1,6 +1,7 @@
 let express = require('express');
 let router = express.Router()
 let db = require("../exports/oracle");
+let kakaowork = require("../exports/kakaowork");
 
 /* GET home page. */
 router.get('/', (req, res, next) => {
@@ -26,6 +27,7 @@ router.post('/', (req, res, next) => {
     if (conn) {
       try {
         db.select(seqSelect, {}, (succ, rows) => {
+          let kakaoWorkArr = []
           let leaveArr = []
           let leaveDetailArr = []
           if (!succ) {
@@ -47,6 +49,7 @@ router.post('/', (req, res, next) => {
                 cnt : param.cnt,
                 id : req.session.user.id,
               })
+              kakaoWorkArr.push(param.name)
               
               let date = new Date(param.startDate)
               for (j=0; j<param.cnt; j++) {
@@ -69,6 +72,8 @@ router.post('/', (req, res, next) => {
                       data : []    
                     })
                     db.commit()
+
+                    kakaowork.sendMessage(kakaoWorkArr)
                   } else {
                     res.json({
                       status : false,
@@ -111,5 +116,5 @@ router.post('/', (req, res, next) => {
   })
 });
   
-  module.exports = router;
+module.exports = router;
   
