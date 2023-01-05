@@ -3,79 +3,109 @@ let router = express.Router()
 let db = require("../exports/oracle");
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
+router.get('/', (req, res, next) => {
   res.render("index", {title:"Express"})
 });
 
-router.post('/', function(req, res, next) {
-  let params = req.body.events
-  const seqSelect = "SELECT SEQ_LEAVE.NEXTVAL SEQ FROM DUAL"
-  const leaveInsert = `
-    INSERT INTO LEAVE 
-    (IDX, 내용, 시작일, 종료일, 휴가일수, 아이디)
-    VALUES 
-    (:seq, :name, :startDate, :endDate, :cnt, :id)
-  `
-  const leaveDetailInsert = `
-    INSERT INTO LEAVE_DETAIL
-    (IDX, LEAVE_IDX, 휴가일)
-    VALUES 
-    (SEQ_LEAVE_DETAIL.NEXTVAL, :1, :2)
-  `
-  db.connection(function(result, conn) {
-    let leaveDetailArr = []
-    try {
-      for (i=0; i<params.length; i++) {
-        let param = params[i]
-        conn.execute(seqSelect, {}, function(err, result){
-          const seq = result.rows[0].SEQ
-          const insertParam = {
-            seq : seq,
-            name : param.name,
-            startDate : param.startDate,
-            endDate : param.endDate,
-            cnt : param.cnt,
-            id : req.session.user.id,
-          }
-          
-          conn.execute(leaveInsert, insertParam, function(err, result) {
-            if (!err) {
+router.post('/', (req, res, next) => {
+  db.connection((conn) => {
+    let params = req.body.events
+    const seqSelect = "SELECT NVL(MAX(IDX), 0) SEQ FROM LEAVE"
+    const leaveInsert = `
+      INSERT INTO LEAVE 
+      (IDX, 내용, 시작일, 종료일, 휴가일수, 아이디)
+      VALUES 
+      (:seq, :name, :startDate, :endDate, :cnt, :id)
+    `
+    const leaveDetailInsert = `
+      INSERT INTO LEAVE_DETAIL
+      (IDX, LEAVE_IDX, 휴가일, 휴가구분, 기타휴가내용)
+      VALUES 
+      (SEQ_LEAVE_DETAIL.NEXTVAL, :1, :2, :3, :4)
+    `
+    if (conn) {
+      try {
+        db.select(seqSelect, {}, (succ, rows) => {
+          let leaveArr = []
+          let leaveDetailArr = []
+          if (!succ) {
+            res.json({
+              status : false,
+              msg : "DB 조회 중 에러",
+              data : []    
+            })
+          } else {
+            let seq = rows[0].SEQ
+            for (i=0; i<params.length; i++) {
+              let param = params[i]              
+              seq++
+              leaveArr.push({
+                seq : seq,
+                name : param.name,
+                startDate : param.startDate,
+                endDate : param.endDate,
+                cnt : param.cnt,
+                id : req.session.user.id,
+              })
+              
               let date = new Date(param.startDate)
               for (j=0; j<param.cnt; j++) {
-                  const year = date.getFullYear()
-                  const month = date.getMonth()+1 < 10 ? "0" + (date.getMonth()+1) : date.getMonth()+1
-                  const day = date.getDate() < 10 ? "0" + (date.getDate()) : date.getDate()
-                  const ymd = `${year}-${month}-${day}`
-                  leaveDetailArr.push([seq, ymd])
-                  date.setDate(date.getDate()+1)
-                }                 
-            } else {
-              db.rollback()
+                const year = date.getFullYear()
+                const month = date.getMonth()+1 < 10 ? "0" + (date.getMonth()+1) : date.getMonth()+1
+                const day = date.getDate() < 10 ? "0" + (date.getDate()) : date.getDate()
+                const ymd = `${year}-${month}-${day}`
+                leaveDetailArr.push([seq, ymd, param.type, param.etcType])
+                date.setDate(date.getDate()+1)
+              }
             }
-            console.log(leaveDetailArr)
-          })
+
+            db.updateBulk(leaveInsert, leaveArr, (leaveSucc, leaveUpCnt) => {
+              if (leaveSucc) {
+                db.updateBulk(leaveDetailInsert, leaveDetailArr, (leaveDetailSucc, leaveDetailUpCnt) => { 
+                  if (leaveDetailSucc) {
+                    res.json({
+                      status : true,
+                      msg : "",
+                      data : []    
+                    })
+                    db.commit()
+                  } else {
+                    res.json({
+                      status : false,
+                      msg : "휴가 상세 업데이트 실패",
+                      data : []    
+                    })
+                    db.rollback()
+                  }
+                  db.close()
+                })
+              } else {
+                db.close()
+                res.json({
+                  status : false,
+                  msg : "휴가 업데이트 실패",
+                  data : []    
+                })
+              }
+            })
+          }
         })
-      }            
+      } catch(e) {
+        db.rollback()
+        db.close()
+        console.error(e)
+        res.json({
+          status : false,
+          msg : "DB UPDATE 중 에러 (catch)",
+          data : []    
+        })
+      }
+    } else {
       res.json({
-        status : true,
-        msg : "",
-        data : []    
-      })
-    } catch(e) {
-      conn.rollback()
-      conn.close()
-      console.error(e)
-    } finally {
-      conn.rollback()    
-      // conn.executeMany(leaveDetailInsert, leaveDetailArr, function(err, result){           
-      //   if (err) {
-      //     console.error(err)
-      //     db.rollback()
-      //   } else {
-      //     conn.commit()
-      //   }
-      //   conn.close()
-      // }) 
+        status : false,
+        msg : "DB 연결 실패",
+        data : []
+      });
     }
 
   })

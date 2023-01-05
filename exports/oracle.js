@@ -19,22 +19,26 @@ module.exports = {
                 password      : config.password,
                 connectString : config.connectString,
             },
-            function(err, connection){
+            (err, connection) =>{
                 if (err) {
-                    callback(false, conn)
+                    console.log("DB connection error")
+                    console.error(err)
+                    callback(false)
                 } else {
                     conn = connection
-                    callback(true, conn)
+                    callback(true)
                 }
             }
-        )
-    },
-    close : () => {
-        conn.close()
-    },
-    select : async (query, params, callback) => {
-        await conn.execute(query, params, function(err, result){
+            )
+        },
+        close : () => {
+            console.log("DB Close")
+            conn.close()
+        },
+        select : (query, params, callback) => {        
+        conn.execute(query, params, (err, result) =>{
             if (err){
+                console.log("DB select error")
                 console.error(err)
                 callback(false)
             }else{                
@@ -42,9 +46,10 @@ module.exports = {
             }
         })
     },
-    update : async (query, params, callback) => {
-        await conn.execute(query, params, function(err, result){
+    update : (query, params, callback) => {
+        conn.execute(query, params, (err, result) =>{
             if (err){
+                console.log("DB update error")
                 console.error(err)
                 callback(false)
             }else{                
@@ -52,9 +57,10 @@ module.exports = {
             }
         })
     },
-    updateBulk : async (query, params, callback) => {
-        await conn.executeMany(query, params, function(err, result){
+    updateBulk : (query, params, callback) => {
+        conn.executeMany(query, params, (err, result) =>{
             if (err){
+                console.log("DB update bulk error")
                 console.error(err)
                 callback(false)
             }else{                
@@ -63,9 +69,11 @@ module.exports = {
         })
     },
     commit : () => {
+        console.log("DB commit")
         conn.commit()
     },
     rollback : () => {
+        console.log("DB rollback")
         conn.rollback()
     },
 }

@@ -3,11 +3,11 @@ let router = express.Router();
 let dbconfig = require("../exports/oracle")
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
+router.get('/', (req, res, next) => {
   res.render("index", {title:"Express"})
 });
 
-router.post('/', function(req, res, next) {
+router.post('/', (req, res, next) => {
   res.json({ title: 'Express' });
 });
 
