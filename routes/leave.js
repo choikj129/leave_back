@@ -66,14 +66,26 @@ router.post('/', (req, res, next) => {
               if (leaveSucc) {
                 db.updateBulk(leaveDetailInsert, leaveDetailArr, (leaveDetailSucc, leaveDetailUpCnt) => { 
                   if (leaveDetailSucc) {
-                    res.json({
-                      status : true,
-                      msg : "",
-                      data : []    
+                    kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {                      
+                      if (isSend) {
+                        res.json({
+                          status : true,
+                          msg : "카카오워크 전송 성공",
+                          data : []    
+                        })
+                        db.commit()                        
+                        db.close()
+                      } else {
+                        console.log("Kakaowork send failed")
+                        res.json({
+                          status : false,
+                          msg : "카카오워크 전송 실패",
+                          data : []    
+                        })
+                        db.rollback()
+                        db.close()
+                      }
                     })
-                    db.commit()
-
-                    kakaowork.sendMessage(kakaoWorkArr)
                   } else {
                     res.json({
                       status : false,
@@ -81,8 +93,8 @@ router.post('/', (req, res, next) => {
                       data : []    
                     })
                     db.rollback()
+                    db.close()
                   }
-                  db.close()
                 })
               } else {
                 db.close()
