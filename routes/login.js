@@ -35,12 +35,12 @@ router.post('/', (req, res, next) => {
               req.session.user = {
                 id : data.아이디,
                 name : data.이름,
-                manager : data.관리자여부,
+                isManager : data.관리자여부 == "Y" ? true : false,
               }              
               res.json({
                 status : true,
                 msg : "",
-                data : data
+                data : req.session.user
               })
             }
           }        

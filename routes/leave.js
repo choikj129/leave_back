@@ -62,30 +62,38 @@ router.post('/', (req, res, next) => {
               }
             }
 
-            db.updateBulk(leaveInsert, leaveArr, (leaveSucc, leaveUpCnt) => {
+            db.updateBulk(leaveInsert, leaveArr, (leaveSucc) => {
               if (leaveSucc) {
-                db.updateBulk(leaveDetailInsert, leaveDetailArr, (leaveDetailSucc, leaveDetailUpCnt) => { 
+                db.updateBulk(leaveDetailInsert, leaveDetailArr, (leaveDetailSucc) => { 
                   if (leaveDetailSucc) {
-                    kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {                      
-                      if (isSend) {
-                        res.json({
-                          status : true,
-                          msg : "카카오워크 전송 성공",
-                          data : []    
-                        })
-                        db.commit()                        
-                        db.close()
-                      } else {
-                        console.log("Kakaowork send failed")
-                        res.json({
-                          status : false,
-                          msg : "카카오워크 전송 실패",
-                          data : []    
-                        })
-                        db.rollback()
-                        db.close()
-                      }
-                    })
+                    if (req.session.user.isManager) {
+                      res.json({
+                        status : true,
+                        msg : "휴가 등록 완료",
+                        data : []    
+                      })
+                    } else {
+                      kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {                      
+                        if (isSend) {
+                          res.json({
+                            status : true,
+                            msg : "카카오워크 전송 성공",
+                            data : []    
+                          })
+                          db.commit()
+                          db.close()
+                        } else {
+                          console.log("Kakaowork send failed")
+                          res.json({
+                            status : false,
+                            msg : "카카오워크 전송 실패",
+                            data : []    
+                          })
+                          db.rollback()
+                          db.close()
+                        }
+                      })
+                    }
                   } else {
                     res.json({
                       status : false,
