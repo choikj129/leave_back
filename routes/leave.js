@@ -5,16 +5,34 @@ let kakaowork = require("../exports/kakaowork");
 
 /* GET home page. */
 router.get('/', (req, res, next) => {  
-  console.log("@@@@@@@@@@@@@@@@@@@")
   const id = req.query.id
   db.connection((conn) => {
     if (conn) {
       try {
-        const sql = "SELECT 내용, 시작일, 종료일, 휴가일수 FROM LEAVE WHERE 아이디=:1 ORDER BY 내용"
-        res.json({data:[]})
-
+        const sql = "SELECT 내용, 시작일, 종료일, 휴가일수 FROM LEAVE WHERE 아이디=:id ORDER BY 내용"
+        db.select(sql, {id : id}, (succ, rows) => {
+          if (succ) {
+            res.json({
+              status : true,
+              msg : "",
+              data:rows
+            })
+          } else {
+            res.json({
+              status : false,
+              msg : "DB 조회 중 에러",
+              data : []    
+            })
+          }
+          db.close()
+        })
       } catch {
-
+        res.json({
+          status : false,
+          msg : "DB 조회 중 에러 (catch)",
+          data : []    
+        })
+        db.close()
       }
     } else {
       res.json({
@@ -23,7 +41,6 @@ router.get('/', (req, res, next) => {
         data : []
       });
     }
-    db.close()
   })
 });
 
