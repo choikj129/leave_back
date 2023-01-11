@@ -4,12 +4,8 @@ let db = require("../exports/oracle")
 // let crypto = require("crypto");
 
 /* GET home page. */
-router.get('/', (req, res, next) => {
-  res.render("index", {title:"Express"})
-});
 
 router.post('/', (req, res, next) => {
-  
   db.connection((conn) => {
     if (conn) {
       try {
@@ -36,6 +32,7 @@ router.post('/', (req, res, next) => {
                 id : data.아이디,
                 name : data.이름,
                 isManager : data.관리자여부 == "Y" ? true : false,
+                isLogin : true,
               }              
               res.json({
                 status : true,

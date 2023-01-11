@@ -25,6 +25,7 @@ module.exports = {
                     console.error(err)
                     callback(false)
                 } else {
+                    console.log("DB connection success")
                     conn = connection
                     callback(true)
                 }

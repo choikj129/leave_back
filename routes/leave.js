@@ -4,28 +4,47 @@ let db = require("../exports/oracle");
 let kakaowork = require("../exports/kakaowork");
 
 /* GET home page. */
-router.get('/', (req, res, next) => {
-  res.render("index", {title:"Express"})
+router.get('/', (req, res, next) => {  
+  console.log("@@@@@@@@@@@@@@@@@@@")
+  const id = req.query.id
+  db.connection((conn) => {
+    if (conn) {
+      try {
+        const sql = "SELECT 내용, 시작일, 종료일, 휴가일수 FROM LEAVE WHERE 아이디=:1 ORDER BY 내용"
+        res.json({data:[]})
+
+      } catch {
+
+      }
+    } else {
+      res.json({
+        status : false,
+        msg : "DB 연결 실패",
+        data : []
+      });
+    }
+    db.close()
+  })
 });
 
 router.post('/', (req, res, next) => {
   db.connection((conn) => {
-    let params = req.body.events
-    const seqSelect = "SELECT NVL(MAX(IDX), 0) SEQ FROM LEAVE"
-    const leaveInsert = `
-      INSERT INTO LEAVE 
-      (IDX, 내용, 시작일, 종료일, 휴가일수, 아이디)
-      VALUES 
-      (:seq, :name, :startDate, :endDate, :cnt, :id)
-    `
-    const leaveDetailInsert = `
-      INSERT INTO LEAVE_DETAIL
-      (IDX, LEAVE_IDX, 휴가일, 휴가구분, 기타휴가내용)
-      VALUES 
-      (SEQ_LEAVE_DETAIL.NEXTVAL, :1, :2, :3, :4)
-    `
     if (conn) {
       try {
+        let params = req.body.events
+        const seqSelect = "SELECT NVL(MAX(IDX), 0) SEQ FROM LEAVE"
+        const leaveInsert = `
+          INSERT INTO LEAVE 
+          (IDX, 내용, 시작일, 종료일, 휴가일수, 아이디)
+          VALUES 
+          (:seq, :name, :startDate, :endDate, :cnt, :id)
+        `
+        const leaveDetailInsert = `
+          INSERT INTO LEAVE_DETAIL
+          (IDX, LEAVE_IDX, 휴가일, 휴가구분, 기타휴가내용)
+          VALUES 
+          (SEQ_LEAVE_DETAIL.NEXTVAL, :1, :2, :3, :4)
+        `
         db.select(seqSelect, {}, (succ, rows) => {
           let kakaoWorkArr = []
           let leaveArr = []

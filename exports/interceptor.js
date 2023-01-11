@@ -4,7 +4,8 @@ module.exports = {
         req.session.user = {
             id: 'gj.choi',
             name: '최경주',
-            isManager: 'N'
+            isManager: 'N',
+            isLogin : true,
         }
         if (req.session.user == undefined) {
             return false
