@@ -97,7 +97,6 @@ router.post('/', (req, res, next) => {
                 date.setDate(date.getDate()+1)
               }
             }
-
             db.updateBulk(leaveInsert, leaveArr, (leaveSucc) => {
               if (leaveSucc) {
                 db.updateBulk(leaveDetailInsert, leaveDetailArr, (leaveDetailSucc) => { 
@@ -108,6 +107,8 @@ router.post('/', (req, res, next) => {
                         msg : "휴가 등록 완료",
                         data : []    
                       })
+                      db.commit()
+                      db.close()
                     } else {
                       kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {                      
                         if (isSend) {
@@ -168,7 +169,51 @@ router.post('/', (req, res, next) => {
         data : []
       });
     }
+  })
+});
 
+router.get('/lists', (req, res, next) => {  
+  const id = req.query.id
+  db.connection((conn) => {
+    if (conn) {
+      try {
+        const sql = `
+          SELECT LD.*, L.아이디, SUBSTR(LD.휴가일, 0, 4) 연도 
+          FROM LEAVE_DETAIL LD, LEAVE L 
+          WHERE LD.LEAVE_IDX = L.IDX AND 아이디=:id 
+          ORDER BY 연도 DESC, 휴가일
+        `
+        db.select(sql, {id : id}, (succ, rows) => {
+          if (succ) {
+            res.json({
+              status : true,
+              msg : "",
+              data : rows
+            })
+          } else {
+            res.json({
+              status : false,
+              msg : "DB 조회 중 에러",
+              data : []    
+            })
+          }
+          db.close()
+        })
+      } catch {
+        res.json({
+          status : false,
+          msg : "DB 조회 중 에러 (catch)",
+          data : []    
+        })
+        db.close()
+      }
+    } else {
+      res.json({
+        status : false,
+        msg : "DB 연결 실패",
+        data : []
+      });
+    }
   })
 });
   
