@@ -13,5 +13,16 @@ module.exports = {
             msg: msg,
             data: data
         })
+    },
+    replaceQuery : (query, params) => {
+        Object.entries(params).forEach((param) => {
+            const key = param[0]
+            let value = param[1]            
+            if (typeof value == "string") {
+                value = `'${value}'`
+            }
+            query = query.replaceAll(`@${key}`, value)
+        })
+        return query
     }
 }

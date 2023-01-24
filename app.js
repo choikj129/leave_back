@@ -29,14 +29,13 @@ app.use(
     secret : "odinue",
     resave : false,
     saveUninitialized : true,
-    maxAge : 60 * 60 * 1000   // 세션 유지 1시간
+    maxAge : 24 * 60 * 60 * 1000   // 세션 유지 기간 : 하루
   })
 )
 
 app.use((req, res, next) => {
   const isSession = interceptor.session(req)
-
-  if (isSession) {
+  if (req._parsedOriginalUrl.path == "/login" || isSession) {
     next()
   } else {
     res.json({status : false, msg : "no session", data : []})

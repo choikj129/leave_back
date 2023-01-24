@@ -3,27 +3,25 @@ let router = express.Router()
 let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
 let kakaowork = require("../exports/kakaowork");
-const { DB_TYPE_VARCHAR } = require('oracledb');
-
 
 /* GET home page. */
 router.get('/', (req, res, next) => {
     const id = req.query.id
-    db.connection((conn) => {
-        if (conn) {
+    db.connection((succ, conn) => {
+        if (succ) {
             try {
-                const sql = "SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE WHERE 아이디=:id ORDER BY 내용"
-                db.select(sql, { id: id }, (succ, rows) => {
+                const sql = "SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE WHERE 아이디=@id ORDER BY 내용"
+                db.select(conn, sql, { id: id }, (succ, rows) => {
                     if (succ) {
                         funcs.sendSuccess(res, rows)                        
                     } else {
                         funcs.sendFail(res, "DB 조회 중 에러")
                     }
-                    db.close()
+                    db.close(conn)
                 })
             } catch {
                 funcs.sendFail(res, "DB 조회 중 에러 (catch)")
-                db.close()
+                db.close(conn)
             }
         } else {
             funcs.sendFail(res, "DB 연결 실패")
@@ -32,10 +30,11 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-    db.connection((conn) => {
-        if (conn) {
+    db.connection((succ, conn) => {
+        if (succ) {
             try {
                 let params = req.body.events
+                const id = req.body.id
                 const seqSelect = "SELECT NVL(MAX(IDX), 0) SEQ FROM LEAVE"
                 const leaveInsert = `
                     INSERT INTO LEAVE 
@@ -55,17 +54,13 @@ router.post('/', (req, res, next) => {
                 const leaveDetailDelete = `
                     DELETE FROM LEAVE_DETAIL WHERE LEAVE_IDX = :1
                 `
-                db.select(seqSelect, {}, (succ, rows) => {
-                    let kakaoWorkArr = []
-
-                    let leaveInsertArr = []
-                    let leaveDeleteArr = []
-                    let leaveDetailInsertArr = []
+                db.select(conn, seqSelect, {}, (succ, rows) => {
                     if (!succ) {
                         funcs.sendFail(res, "DB 조회 중 에러")
                     } else {
                         let dbHash = {}
                         let seq = rows[0].SEQ
+                        let kakaoWorkArr = []
                         for (i = 0; i < params.length; i++) {
                             let param = params[i]
                             seq++
@@ -83,7 +78,7 @@ router.post('/', (req, res, next) => {
                                     startDate: param.startDate,
                                     endDate: param.endDate,
                                     cnt: param.cnt,
-                                    id: req.session.user.id,
+                                    id: id,
                                 })
                                 let date = new Date(param.startDate)
                                 for (j = 0; j < param.cnt; j++) {
@@ -108,35 +103,34 @@ router.post('/', (req, res, next) => {
                             kakaoWorkArr.push(param.name)
 
                         }
-                        db.multiUpdateBulk(dbHash, (succ, result) => {
-                            console.log(succ, result)
+                        db.multiUpdateBulk(conn, dbHash, (succ, result) => {
                             if (succ) {
                                 if (req.session.user.isManager) {
                                     funcs.sendSuccess(res, [], "휴가 등록 / 취소 완료")
-                                    db.commit()
-                                    db.close()
+                                    db.commit(conn)
+                                    db.close(conn)
                                 } else {
                                     kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {
                                         if (isSend) {
                                             funcs.sendSuccess(res, [], "카카오워크 전송 성공")
-                                            db.commit()
+                                            db.commit(conn)
                                         } else {                                                            
                                             funcs.sendFail(res, "카카오워크 전송 실패")
-                                            db.rollback()
+                                            db.rollback(conn)
                                         }
-                                        db.close()
+                                        db.close(conn)
                                     })
                                 }
                             } else {
                                 funcs.sendFail(res, "휴가 등록 / 취소 실패")
-                                db.close()
+                                db.close(conn)
                             }
                         })
                     }
                 })
             } catch (e) {
-                db.rollback()
-                db.close()
+                db.rollback(conn)
+                db.close(conn)
                 console.error(e)
                 funcs.sendFail(res, "DB UPDATE 중 에러 (catch)")
             }
@@ -148,30 +142,42 @@ router.post('/', (req, res, next) => {
 
 router.get('/lists', (req, res, next) => {
     const id = req.query.id
-    db.connection((conn) => {
-        if (conn) {
+    db.connection((succ, conn) => {
+        if (succ) {
             try {
-                const sql = `
-                    SELECT LD.*, L.아이디, 연도, LC.연차수, LC.포상휴가수, LC.연차수+LC.포상휴가수 총휴가수
-                    FROM LEAVE_DETAIL LD, LEAVE L, LEAVE_CNT LC
-                    WHERE 
-                        LD.LEAVE_IDX = L.IDX 
-                        AND L.아이디=:id  
-                        AND L.아이디 = LC.아이디 
-                        AND SUBSTR(LD.휴가일, 0, 4) = LC.연도 
+                const listsSql = `
+                    SELECT LD.*, L.아이디, SUBSTR(LD.휴가일, 0, 4) 연도 
+                    FROM LEAVE_DETAIL LD, LEAVE L 
+                    WHERE LD.LEAVE_IDX = L.IDX AND 아이디=@id 
                     ORDER BY 연도 DESC, 휴가일
                 `
-                db.select(sql, { id: id }, (succ, rows) => {
+                const cntsSql = `
+                    SELECT 
+                        연도, 
+                        NVL(MAX(연차수), 0) 연차수, 
+                        NVL(MAX(포상휴가수), 0) 포상휴가수, 
+                        SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '포상', 0, 1)) 사용연차수, 
+                        SUM(DECODE(SUBSTR(휴가구분, 0, 2), '포상', 1, 0)) 사용포상휴가수
+                    FROM LEAVE_CNT LC, LEAVE_DETAIL LD, LEAVE L
+                    WHERE LD.LEAVE_IDX = L.IDX AND L.아이디=@id AND L.아이디 = LC.아이디  AND SUBSTR(LD.휴가일, 0, 4) = LC.연도
+                    GROUP BY 연도
+                `
+                let dbHash = {
+                    lists : {query : listsSql, params : { id: id }},
+                    cnts : {query : cntsSql, params : { id: id }},
+                }
+
+                db.multiSelect(conn, dbHash, (succ, rows) => {
                     if (succ) {
                         funcs.sendSuccess(res, rows)                        
                     } else {
                         funcs.sendFail(res, "DB 조회 중 에러")
                     }
-                    db.close()
+                    db.close(conn)
                 })
             } catch {
                 funcs.sendFail(res, "DB 조회 중 에러 (catch)")
-                db.close()
+                db.close(conn)
             }
         } else {
             funcs.sendFail(res, "DB 연결 실패")

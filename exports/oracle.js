@@ -1,5 +1,6 @@
 let db = require("oracledb")
 let config = require("./config/db_connect")
+let funcs = require("./functions");
 /*
     module.exports = {
         "user": "username",
@@ -10,15 +11,24 @@ let config = require("./config/db_connect")
 
 db.initOracleClient({ libDir: "C:\\oracle\\instantclient_21_8" })
 db.outFormat = db.OUT_FORMAT_OBJECT
-let conn = null;
+let pool = null
+db.createPool({
+    user: config.user,
+    password: config.password,
+    connectString: config.connectString,
+    poolMin : 0,
+    poolMax : 10,    
+}, (err, conn) => {
+    if (err) {
+        console.error("createPool() error: " + err.message);
+        return;
+    }
+    pool = conn
+})
+
 module.exports = {
-    connection: (callback) => {
-        db.getConnection(
-            {
-                user: config.user,
-                password: config.password,
-                connectString: config.connectString,
-            },
+    connection: (callback) => {        
+        pool.getConnection(
             (err, connection) => {
                 if (err) {
                     console.log("DB connection error")
@@ -26,18 +36,22 @@ module.exports = {
                     callback(false)
                 } else {
                     console.log("DB connection success")
-                    conn = connection
-                    callback(true)
+                    callback(true, connection)
                 }
             }
         )
     },
-    close: () => {
+    close: (conn) => {
         console.log("DB Close")
-        conn.close()
+        try {
+            conn.close()
+        } catch {
+            console.log("invalid connection")
+        }
     },
-    select: (query, params, callback) => {
-        conn.execute(query, params, (err, result) => {
+    select: (conn, query, params, callback) => {
+        query = funcs.replaceQuery(query, params)
+        conn.execute(query, {}, (err, result) => {
             if (err) {
                 console.log("DB select error")
                 console.log("==========================================================")
@@ -50,30 +64,53 @@ module.exports = {
             }
         })
     },
-    // multiSelect : (hash, callback) => {
-        
-    // },
-    update: (query, params, callback) => {
-        if (params.length > 0) {
-            conn.execute(query, params, (err, result) => {
-                if (err) {
-                    console.log("DB update error")
-                    console.log("==========================================================")
-                    console.log(query)
-                    console.log("==========================================================")
-                    console.error(err)
-                    callback(false)
-                } else {
-                    callback(true, result.rowsAffected)
-                }
+    multiSelect : (conn, hash, callback) => {
+        keys = Object.keys(hash)
+        if (keys.length > 0) {
+            returnData = {}
+            keys.forEach((key, i) => {
+                hash[key].query = funcs.replaceQuery(hash[key].query, hash[key].params)
+                conn.execute(hash[key].query, {}, (err, result) => {
+                    if (err) {
+                        console.log("DB multi select error")
+                        console.log("==========================================================")
+                        console.log(hash[key].query)
+                        console.log("==========================================================")
+                        console.error(err)
+                        callback(false)
+                        return false;
+                    } else {
+                        returnData[key] = result.rows
+                        if (i == keys.length -1) {
+                            callback(true, returnData)
+                        }
+                    }
+                })
             })
         } else {
             callback(true, 0)
         }
+        
     },
-    updateBulk: (query, params, callback) => {
+    update: (conn, query, params, callback) => {
+        query = funcs.replaceQuery(query, params)
+        conn.execute(query, {}, (err, result) => {
+            if (err) {
+                console.log("DB update error")
+                console.log("==========================================================")
+                console.log(query)
+                console.log("==========================================================")
+                console.error(err)
+                callback(false)
+            } else {
+                callback(true, result.rowsAffected)
+            }
+        })
+    },
+    updateBulk: (conn, query, params, callback) => {
+        query = funcs.replaceQuery(query, params)
         if (params.length > 0) {
-            conn.executeMany(query, params, (err, result) => {
+            conn.executeMany(query, {}, (err, result) => {
                 if (err) {
                     console.log("DB update bulk error")
                     console.log("==========================================================")
@@ -89,11 +126,12 @@ module.exports = {
             callback(true, 0)
         }
     },
-    multiUpdateBulk : (hash, callback) => {
+    multiUpdateBulk : (conn, hash, callback) => {
         keys = Object.keys(hash)
         if (keys.length > 0) {
             returnData = {}
             keys.forEach((key, i) => {
+                // executeMany는 쿼리 치환이 어려움
                 conn.executeMany(hash[key].query, hash[key].params, (err, result) => {
                     if (err) {
                         console.log("DB multi update bulk error")
@@ -115,11 +153,11 @@ module.exports = {
             callback(true, 0)
         }
     },
-    commit: () => {
+    commit: (conn) => {
         console.log("DB commit")
         conn.commit()
     },
-    rollback: () => {
+    rollback: (conn) => {
         console.log("DB rollback")
         conn.rollback()
     },

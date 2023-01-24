@@ -7,12 +7,12 @@ let funcs = require("../exports/functions");
 /* GET home page. */
 
 router.post('/', (req, res, next) => {
-  db.connection((conn) => {
-    if (conn) {
+  db.connection((succ, conn) => {
+    if (succ) {
       try {
-        const sql = "SELECT * FROM EMP WHERE 아이디=:id and 비밀번호=:pw"
+        const sql = "SELECT * FROM EMP WHERE 아이디=@id and 비밀번호=@pw"
         const params = {id : req.body.id, pw : req.body.pw}
-        db.select(sql, params, (succ, rows) =>{
+        db.select(conn, sql, params, (succ, rows) =>{
           if (!succ) {
             funcs.sendFail(res, "DB 조회 중 에러")
           } else {
@@ -29,10 +29,10 @@ router.post('/', (req, res, next) => {
               funcs.sendSuccess(res, req.session.user)
             }
           }        
-          db.close()
+          db.close(conn)
         })
       } catch(e) {
-        db.close()
+        db.close(conn)
         console.error(e)
         funcs.sendFail("DB 조회 중 에러 (catch)")
       }
