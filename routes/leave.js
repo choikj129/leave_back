@@ -152,15 +152,23 @@ router.get('/lists', (req, res, next) => {
                     ORDER BY 연도 DESC, 휴가일
                 `
                 const cntsSql = `
+                SELECT 
+                    LC.아이디,
+                    연도, 
+                    연차수, 
+                    포상휴가수,
+                    NVL(사용연차수, 0) 사용연차수,
+                    NVL(사용포상휴가수, 0) 사용포상휴가수
+                FROM LEAVE_CNT LC LEFT JOIN (
                     SELECT 
-                        연도, 
-                        NVL(MAX(연차수), 0) 연차수, 
-                        NVL(MAX(포상휴가수), 0) 포상휴가수, 
+                        아이디,
                         SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '포상', 0, 1)) 사용연차수, 
                         SUM(DECODE(SUBSTR(휴가구분, 0, 2), '포상', 1, 0)) 사용포상휴가수
-                    FROM LEAVE_CNT LC, LEAVE_DETAIL LD, LEAVE L
-                    WHERE LD.LEAVE_IDX = L.IDX AND L.아이디=@id AND L.아이디 = LC.아이디  AND SUBSTR(LD.휴가일, 0, 4) = LC.연도
-                    GROUP BY 연도
+                    FROM LEAVE L, LEAVE_DETAIL LD
+                    WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = @id
+                    GROUP BY SUBSTR(휴가일, 0, 4), 아이디
+                ) L ON L.아이디 = LC.아이디
+                WHERE LC.아이디=@id
                 `
                 let dbHash = {
                     lists : {query : listsSql, params : { id: id }},
