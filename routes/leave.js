@@ -10,7 +10,8 @@ router.get('/', (req, res, next) => {
     db.connection((succ, conn) => {
         if (succ) {
             try {
-                const sql = "SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE WHERE 아이디=@id ORDER BY 내용"
+                let where = req.session.user.isManager ? "" : "WHERE 아이디=@id"
+                const sql = `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE ${where} ORDER BY 내용`
                 db.select(conn, sql, { id: id }, (succ, rows) => {
                     if (succ) {
                         funcs.sendSuccess(res, rows)                        
