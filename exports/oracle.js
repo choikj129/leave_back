@@ -1,6 +1,7 @@
 let db = require("oracledb")
 let config = require("./config/db_connect")
 let funcs = require("./functions");
+const path = require("./config/clientPath")
 /*
     module.exports = {
         "user": "username",
@@ -9,7 +10,7 @@ let funcs = require("./functions");
     }
 */
 
-db.initOracleClient({ libDir: "\/home\/ec2-user\/leave\/instantclient_21_8" })
+db.initOracleClient({ libDir: path })
 db.outFormat = db.OUT_FORMAT_OBJECT
 let pool = null
 db.createPool({
