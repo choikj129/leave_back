@@ -9,16 +9,27 @@ router.get('/', (req, res, next) => {
 		if (succ) {
 			try {
 				const sql = `
-					SELECT E.아이디, 이름, 연도, 연차수, NVL(포상휴가수, 0) 포상휴가수
-					FROM EMP E LEFT JOIN (
+					SELECT E.아이디, E.이름, @year 연도, LC.연차수, NVL(LC.포상휴가수, 0) 포상휴가수, NVL(LD.사용연차수, 0) 사용연차수, NVL(LD.사용포상휴가수, 0) 사용포상휴가수
+					FROM EMP E 
+						LEFT JOIN (
 							SELECT 아이디, 연도, 연차수, 포상휴가수
 							FROM LEAVE_CNT
-							WHERE 연도 = TO_CHAR(SYSDATE, 'YYYY')
+							WHERE 연도 = @year
 						) LC ON E.아이디 = LC.아이디
+						LEFT JOIN (
+							SELECT 	
+								아이디,
+								SUBSTR(휴가일, 0, 4) 연도,	
+								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '포상', 0, '기타', 0, 1)) 사용연차수, 
+								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '포상', 1, 0)) 사용포상휴가수
+							FROM LEAVE L, LEAVE_DETAIL LD
+							WHERE L.IDX = LD.LEAVE_IDX AND SUBSTR(휴가일, 0, 4) = @year
+							GROUP BY SUBSTR(휴가일, 0, 4), 아이디
+						) LD ON LD.아이디 = E.아이디
 					WHERE 관리자여부 = 'N'
 					ORDER BY 이름
 				`
-				db.select(conn, sql, {}, (succ, rows) => {
+				db.select(conn, sql, {year : req.query.year}, (succ, rows) => {
 					if (succ) {
 						funcs.sendSuccess(res, rows)
 					} else {
