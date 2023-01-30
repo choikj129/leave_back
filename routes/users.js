@@ -4,7 +4,7 @@ let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
 
 /* GET users listing. */
-router.get('/', (req, res, next) => {	
+router.get('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -83,4 +83,36 @@ router.post('/', (req, res, next) => {
 		}
 	})
 });
+
+router.get('/logs', (req, res, next) => {
+	db.connection((succ, conn) => {
+		if (succ) {
+			try {
+				const sql = `
+					SELECT L.* 
+					FROM (
+						SELECT IDX, 이름, L.아이디, 내용, TO_CHAR(등록일자, 'YYYY-MM-DD HH24:MI:SS') 등록일자 
+						FROM LEAVE L, EMP E 
+						WHERE L.아이디 = E.아이디 
+						ORDER BY 등록일자 DESC, 내용 DESC
+					) L 
+					WHERE ROWNUM < 30
+				`
+				db.select(conn, sql, {}, (succ, rows) => {
+					if (succ) {
+						funcs.sendSuccess(res, rows)
+					} else {
+						funcs.sendFail(res, "DB 조회 중 에러")
+					}
+					db.close(conn)
+				})
+			} catch {
+				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
+				db.close(conn)
+			}
+		} else {
+			funcs.sendFail(res, "DB 연결 실패")
+		}
+	})
+})
 module.exports = router;
