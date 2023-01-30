@@ -9,7 +9,7 @@ let funcs = require("./functions");
     }
 */
 
-db.initOracleClient({ libDir: "C:\\oracle\\instantclient_21_8" })
+db.initOracleClient({ libDir: "\/home\/ec2-user\/leave\/instantclient_21_8" })
 db.outFormat = db.OUT_FORMAT_OBJECT
 let pool = null
 db.createPool({
