@@ -7,12 +7,12 @@ let funcs = require("../exports/functions");
 router.get('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
-			try {
+			try {				
 				const sql = `
-					SELECT E.아이디, E.이름, @year 연도, LC.연차수, NVL(LC.포상휴가수, 0) 포상휴가수, NVL(LD.사용연차수, 0) 사용연차수, NVL(LD.사용포상휴가수, 0) 사용포상휴가수
+					SELECT E.아이디, E.이름, E.직위, @year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수
 					FROM EMP E 
 						LEFT JOIN (
-							SELECT 아이디, 연도, 연차수, 포상휴가수
+							SELECT 아이디, 연도, 휴가수
 							FROM LEAVE_CNT
 							WHERE 연도 = @year
 						) LC ON E.아이디 = LC.아이디
@@ -20,8 +20,7 @@ router.get('/', (req, res, next) => {
 							SELECT 	
 								아이디,
 								SUBSTR(휴가일, 0, 4) 연도,	
-								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '포상', 0, '기타', 0, 1)) 사용연차수, 
-								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '포상', 1, 0)) 사용포상휴가수
+								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1)) 사용휴가수			
 							FROM LEAVE L, LEAVE_DETAIL LD
 							WHERE L.IDX = LD.LEAVE_IDX AND SUBSTR(휴가일, 0, 4) = @year
 							GROUP BY SUBSTR(휴가일, 0, 4), 아이디
@@ -47,7 +46,7 @@ router.get('/', (req, res, next) => {
 	})
 });
 
-router.post('/', (req, res, next) => {
+router.post('/update', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -58,20 +57,37 @@ router.post('/', (req, res, next) => {
 							AND 아이디 = @id
 						)
 					WHEN MATCHED THEN
-						UPDATE SET 연차수 = @annual, 포상휴가수 = @reward
+						UPDATE SET 휴가수 = @cnt
 					WHEN NOT MATCHED THEN
-						INSERT (아이디, 연도, 연차수, 포상휴가수)
-						VALUES (@id, @year, @annual, @reward)
+						INSERT (아이디, 연도, 휴가수)
+						VALUES (@id, @year, @cnt)
+				`
+				const empSql = `
+					UPDATE EMP SET 직위 = @position WHERE 아이디 = @id
 				`
 				db.update(conn, sql, req.body.userInfo, (succ, rows) => {
 					if (succ) {
-						funcs.sendSuccess(res, rows)
-						db.commit(conn)
+						if (req.body.userInfo.position != null) {
+							db.update(conn, empSql, req.body.userInfo,  (succ, rows) => {
+								if (succ) {
+									funcs.sendSuccess(res, rows)
+									db.commit(conn)
+								} else {
+									funcs.sendFail(res, "DB EMP 업데이트 중 에러")
+									db.rollback(conn)
+								}
+								db.close(conn)
+							})
+						}else {
+							funcs.sendSuccess(res, rows)
+							db.commit(conn)
+							db.close(conn)
+						}
 					} else {
-						funcs.sendFail(res, "DB 업데이트 중 에러")
+						funcs.sendFail(res, "DB LEAVE_CNT 업데이트 중 에러")
 						db.rollback(conn)
+						db.close(conn)
 					}
-					db.close(conn)
 				})
 			} catch {
 				funcs.sendFail(res, "DB 업데이트 중 에러 (catch)")
@@ -108,6 +124,103 @@ router.get('/logs', (req, res, next) => {
 				})
 			} catch {
 				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
+				db.close(conn)
+			}
+		} else {
+			funcs.sendFail(res, "DB 연결 실패")
+		}
+	})
+})
+
+router.get('/lists', (req, res, next) => {
+	db.connection((succ, conn) => {
+		if (succ) {
+			try {
+				const sql = `
+					SELECT LD.*, L.아이디, SUBSTR(LD.휴가일, 0, 4) 연도, DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
+					FROM LEAVE_DETAIL LD, LEAVE L 
+					WHERE LD.LEAVE_IDX = L.IDX AND 아이디=@id AND SUBSTR(LD.휴가일, 0, 4) = @year
+					ORDER BY 휴가일
+				`
+				db.select(conn, sql, {id : req.query.id, year : req.query.year}, (succ, rows) => {
+					if (succ) {
+						funcs.sendSuccess(res, rows)
+					} else {
+						funcs.sendFail(res, "DB 조회 중 에러")
+					}
+					db.close(conn)
+				})
+			} catch {
+				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
+				db.close(conn)
+			}
+		} else {
+			funcs.sendFail(res, "DB 연결 실패")
+		}
+	})
+})
+
+router.post('/insert', (req, res, next) => {
+	db.connection((succ, conn) => {
+		if (succ) {
+			try {
+				const sql = `
+					INSERT INTO EMP (아이디, 이름, 직위)
+					VALUES (@i)
+				`
+				db.update(conn, sql, req.body.userInfo, (succ, rows) => {
+					if (succ) {
+						if (req.body.userInfo.position != null) {
+							db.update(conn, empSql, req.body.userInfo,  (succ, rows) => {
+								if (succ) {
+									funcs.sendSuccess(res, rows)
+									db.commit(conn)
+								} else {
+									funcs.sendFail(res, "DB EMP 업데이트 중 에러")
+									db.rollback(conn)
+								}
+								db.close(conn)
+							})
+						}else {
+							funcs.sendSuccess(res, rows)
+							db.commit(conn)
+							db.close(conn)
+						}
+					} else {
+						funcs.sendFail(res, "DB LEAVE_CNT 업데이트 중 에러")
+						db.rollback(conn)
+						db.close(conn)
+					}
+				})
+			} catch {
+				funcs.sendFail(res, "DB 업데이트 중 에러 (catch)")
+				db.rollback(conn)
+				db.close(conn)
+			}
+		} else {
+			funcs.sendFail(res, "DB 연결 실패")
+		}
+	})
+});
+
+router.get('/delete', (req, res, next) => {
+	db.connection((succ, conn) => {
+		if (succ) {
+			try {
+				const sql = `DELETE FROM EMP WHERE 아이디 = @id`
+				db.select(conn, sql, {id : req.query.id}, (succ, rows) => {
+					if (succ) {
+						funcs.sendSuccess(res, rows)
+						db.commit(conn)
+					} else {
+						funcs.sendFail(res, "DB 삭제 중 에러")
+						db.rollback(conn)
+					}
+					db.close(conn)
+				})
+			} catch {
+				funcs.sendFail(res, "DB 삭제 중 에러 (catch)")
+				db.rollback(conn)
 				db.close(conn)
 			}
 		} else {

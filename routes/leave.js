@@ -10,8 +10,9 @@ router.get('/', (req, res, next) => {
     db.connection((succ, conn) => {
         if (succ) {
             try {
-                let where = req.session.user.isManager ? "" : "WHERE 아이디=@id"
-                const sql = `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE ${where} ORDER BY 내용`
+                const sql = req.session.user.isManager 
+                    ? `SELECT IDX, 이름 || ' ' || 내용 내용, 시작일, 종료일, 휴가일수 FROM LEAVE L, EMP E where L.아이디 = E.아이디 ORDER BY 내용`
+                    : `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE where 아이디 = @id ORDER BY 내용`
                 db.select(conn, sql, { id: id }, (succ, rows) => {
                     if (succ) {
                         funcs.sendSuccess(res, rows)                        
@@ -106,22 +107,25 @@ router.post('/', (req, res, next) => {
                         }
                         db.multiUpdateBulk(conn, dbHash, (succ, result) => {
                             if (succ) {
-                                if (req.session.user.isManager) {
-                                    funcs.sendSuccess(res, [], "휴가 등록 / 취소 완료")
-                                    db.commit(conn)
-                                    db.close(conn)
-                                } else {
-                                    kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {
-                                        if (isSend) {
-                                            funcs.sendSuccess(res, [], "카카오워크 전송 성공")
-                                            db.commit(conn)
-                                        } else {                                                            
-                                            funcs.sendFail(res, "카카오워크 전송 실패")
-                                            db.rollback(conn)
-                                        }
-                                        db.close(conn)
-                                    })
-                                }
+                                funcs.sendSuccess(res, [], "휴가 등록 / 취소 완료")
+                                db.commit(conn)
+                                db.close(conn)
+                                // if (req.session.user.isManager) {
+                                //     funcs.sendSuccess(res, [], "휴가 등록 / 취소 완료")
+                                //     db.commit(conn)
+                                //     db.close(conn)
+                                // } else {
+                                //     kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {
+                                //         if (isSend) {
+                                //             funcs.sendSuccess(res, [], "카카오워크 전송 성공")
+                                //             db.commit(conn)
+                                //         } else {                                                            
+                                //             funcs.sendFail(res, "카카오워크 전송 실패")
+                                //             db.rollback(conn)
+                                //         }
+                                //         db.close(conn)
+                                //     })
+                                // }
                             } else {
                                 funcs.sendFail(res, "휴가 등록 / 취소 실패")
                                 db.close(conn)
@@ -147,15 +151,15 @@ router.get('/lists', (req, res, next) => {
         if (succ) {
             try {
                 const listsSql = `
-                    SELECT LD.*, L.아이디, SUBSTR(LD.휴가일, 0, 4) 연도 
+                    SELECT LD.*, L.아이디, SUBSTR(LD.휴가일, 0, 4) 연도, DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
                     FROM LEAVE_DETAIL LD, LEAVE L 
                     WHERE LD.LEAVE_IDX = L.IDX AND 아이디=@id 
                     ORDER BY 연도 DESC, 휴가일
                 `
                 const cntsSql = `
-                    SELECT A.연도, A.아이디, NVL(LC.연차수, 0) 연차수, NVL(LC.포상휴가수,0) 포상휴가수, NVL(사용연차수, 0) 사용연차수, NVL(사용포상휴가수, 0) 사용포상휴가수
+                    SELECT DISTINCT(A.연도), A.아이디, NVL(LC.휴가수, 0) 휴가수, NVL(사용휴가수, 0) 사용휴가수
                     FROM (
-                        SELECT 연도,아이디 FROM LEAVE_CNT WHERE 아이디=@id
+                        SELECT 연도,아이디 FROM LEAVE_CNT WHERE 아이디 = @id
                         UNION ALL
                         SELECT SUBSTR(휴가일, 0, 4) 연도, 아이디
                         FROM LEAVE L, LEAVE_DETAIL LD
@@ -166,8 +170,7 @@ router.get('/lists', (req, res, next) => {
                         SELECT
                             아이디,
                             SUBSTR(휴가일, 0, 4) 연도,	
-                            SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '포상', 0, '기타', 0, 1)) 사용연차수, 
-                            SUM(DECODE(SUBSTR(휴가구분, 0, 2), '포상', 1, 0)) 사용포상휴가수
+                            SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1)) 사용휴가수         
                         FROM LEAVE L, LEAVE_DETAIL LD
                         WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = @id
                         GROUP BY SUBSTR(휴가일, 0, 4), 아이디
@@ -176,10 +179,9 @@ router.get('/lists', (req, res, next) => {
                         SELECT 
                             아이디,
                             연도,    	
-                            연차수, 
-                            포상휴가수
+                            휴가수        
                         FROM LEAVE_CNT
-                        WHERE 아이디=@id
+                        WHERE 아이디 = @id
                     ) LC ON A.연도 = LC.연도
                 `
                 let dbHash = {

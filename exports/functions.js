@@ -3,14 +3,14 @@ module.exports = {
         // 임시 세션처리
         res.json({
             status: false,
-            msg: msg,
+            msg: `[${res.req._parsedOriginalUrl.path}] ${msg}`,
             data: []
         })
     },
     sendSuccess : (res, data, msg="") => {
         res.json({
             status: true,
-            msg: msg,
+            msg: `[${res.req._parsedOriginalUrl.path}] ${msg}`,
             data: data
         })
     },

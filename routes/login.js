@@ -9,8 +9,8 @@ let funcs = require("../exports/functions");
 router.post('/', (req, res, next) => {
   db.connection((succ, conn) => {
     if (succ) {
-      try {
-        const sql = "SELECT * FROM EMP WHERE 아이디=@id and 비밀번호=@pw"
+      try {        
+        const sql = "SELECT 아이디, 이름, 관리자여부, 직위 FROM EMP WHERE 아이디=@id and 비밀번호=@pw"
         const params = {id : req.body.id, pw : req.body.pw}
         db.select(conn, sql, params, (succ, rows) =>{
           if (!succ) {
@@ -23,6 +23,7 @@ router.post('/', (req, res, next) => {
               req.session.user = {
                 id : data.아이디,
                 name : data.이름,
+                position : data.직위,
                 isManager : data.관리자여부 == "Y" ? true : false,
                 isLogin : true,                
               }
