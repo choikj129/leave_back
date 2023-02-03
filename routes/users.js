@@ -3,13 +3,13 @@ var router = express.Router();
 let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
 
-/* GET users listing. */
+/* 사이트 관리자 접속 (직원 정보) */
 router.get('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {				
 				const sql = `
-					SELECT E.아이디, E.이름, E.직위, @year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수
+					SELECT E.아이디, E.이름, E.직위, E.입사일, @year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, ROUND(ROUND((SYSDATE - TO_DATE(입사일, 'YYYYMMDD')) , 0) / 365, 0) 입사년차
 					FROM EMP E 
 						LEFT JOIN (
 							SELECT 아이디, 연도, 휴가수
@@ -45,7 +45,7 @@ router.get('/', (req, res, next) => {
 		}
 	})
 });
-
+/* 직원 휴가 수정 */
 router.post('/update', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
@@ -63,11 +63,11 @@ router.post('/update', (req, res, next) => {
 						VALUES (@id, @year, @cnt)
 				`
 				const empSql = `
-					UPDATE EMP SET 직위 = @position WHERE 아이디 = @id
+					UPDATE EMP SET 직위 = @position, 입사일 = @date WHERE 아이디 = @id
 				`
 				db.update(conn, sql, req.body.userInfo, (succ, rows) => {
 					if (succ) {
-						if (req.body.userInfo.position != null) {
+						if (req.body.userInfo.isEmpChange) {
 							db.update(conn, empSql, req.body.userInfo,  (succ, rows) => {
 								if (succ) {
 									funcs.sendSuccess(res, rows)
@@ -99,7 +99,7 @@ router.post('/update', (req, res, next) => {
 		}
 	})
 });
-
+/* 휴가 신청 기록 */
 router.get('/logs', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
@@ -131,25 +131,46 @@ router.get('/logs', (req, res, next) => {
 		}
 	})
 })
-
+/* 휴가 리스트 */
 router.get('/lists', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
-				const sql = `
-					SELECT LD.*, L.아이디, SUBSTR(LD.휴가일, 0, 4) 연도, DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
-					FROM LEAVE_DETAIL LD, LEAVE L 
-					WHERE LD.LEAVE_IDX = L.IDX AND 아이디=@id AND SUBSTR(LD.휴가일, 0, 4) = @year
+				/* 관리자는 휴가 중 최소 휴가연도, 기본 직원은 본인 신청 최소 휴가연도 */
+				const dateSql = !req.session.user.isManager 
+					? `
+						SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
+						FROM LEAVE_DETAIL LD, LEAVE L
+						WHERE LD.LEAVE_IDX = L.IDX AND L.아이디 = @id
+					`
+					: `
+						SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
+						FROM LEAVE_DETAIL
+					`
+				const listsSql = `
+					SELECT 
+						LD.IDX,
+						LD.휴가일,
+						LD.휴가구분,
+						LD.기타휴가내용 || ' 휴가' 기타휴가내용,
+						E.아이디,
+						SUBSTR(LD.휴가일, 0, 4) 연도,
+						DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
+					FROM LEAVE_DETAIL LD, LEAVE L, EMP E 
+					WHERE LD.LEAVE_IDX = L.IDX AND E.아이디 = L.아이디 AND E.아이디 = @id AND SUBSTR(LD.휴가일, 0, 4) = @year
 					ORDER BY 휴가일
 				`
-				db.select(conn, sql, {id : req.query.id, year : req.query.year}, (succ, rows) => {
+				db.multiSelect(conn, {
+					lists : {query : listsSql, params : {id : req.query.id, year : req.query.year}},
+					date : {query : dateSql, params : {id : req.session.user.id}},
+				}, (succ, rows) => {
 					if (succ) {
 						funcs.sendSuccess(res, rows)
 					} else {
 						funcs.sendFail(res, "DB 조회 중 에러")
 					}
 					db.close(conn)
-				})
+				})				
 			} catch {
 				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
 				db.close(conn)
@@ -159,41 +180,32 @@ router.get('/lists', (req, res, next) => {
 		}
 	})
 })
-
+/* 직원 추가 */
 router.post('/insert', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
 				const sql = `
-					INSERT INTO EMP (아이디, 이름, 직위)
-					VALUES (@i)
+					INSERT INTO EMP (아이디, 이름, 직위, 입사일)
+					VALUES (@id, @name, @position, @date)
 				`
-				db.update(conn, sql, req.body.userInfo, (succ, rows) => {
+				db.update(conn, sql, {
+					name : req.body.name,
+					id : req.body.id,
+					position : req.body.position,
+					date : req.body.date,
+				}, (succ, rows) => {
 					if (succ) {
-						if (req.body.userInfo.position != null) {
-							db.update(conn, empSql, req.body.userInfo,  (succ, rows) => {
-								if (succ) {
-									funcs.sendSuccess(res, rows)
-									db.commit(conn)
-								} else {
-									funcs.sendFail(res, "DB EMP 업데이트 중 에러")
-									db.rollback(conn)
-								}
-								db.close(conn)
-							})
-						}else {
-							funcs.sendSuccess(res, rows)
-							db.commit(conn)
-							db.close(conn)
-						}
+						funcs.sendSuccess(res, rows)
+						db.commit(conn)
 					} else {
-						funcs.sendFail(res, "DB LEAVE_CNT 업데이트 중 에러")
+						funcs.sendFail(res, "DB EMP 삽입 중 에러")
 						db.rollback(conn)
-						db.close(conn)
 					}
+					db.close(conn)						
 				})
 			} catch {
-				funcs.sendFail(res, "DB 업데이트 중 에러 (catch)")
+				funcs.sendFail(res, "DB 삽입 중 에러 (catch)")
 				db.rollback(conn)
 				db.close(conn)
 			}
@@ -202,7 +214,7 @@ router.post('/insert', (req, res, next) => {
 		}
 	})
 });
-
+/* 직원 삭제 */
 router.get('/delete', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {

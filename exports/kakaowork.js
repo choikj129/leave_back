@@ -5,7 +5,7 @@ axios.default.post["Content-Type"] = "application/json"
 axios.defaults.baseURL = "https://api.kakaowork.com/v1"
 axios.defaults.headers.common["Authorization"] = apiKey
 
-function getUserId (email) {
+getUserId = (email) => {
     return axios.get(`/users.find_by_email?email=${email}`)
         .then((res) => {
             if (!res.data.success) {
@@ -15,7 +15,7 @@ function getUserId (email) {
         })
 }
 
-function conversationOpen (id) {
+conversationOpen = (id) => {
     return axios.post("/conversations.open", {
         "user_id" : id
     }).then((res) => {     
@@ -26,7 +26,7 @@ function conversationOpen (id) {
     })
 }
 
-function sendKW (id, text) {
+sendKW = (id, text) => {
     return axios.post("/messages.send", {
         "conversation_id" : id,
         "text" : text

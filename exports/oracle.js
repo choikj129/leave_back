@@ -3,11 +3,15 @@ let config = require("./config/db_connect")
 let funcs = require("./functions");
 const path = require("./config/clientPath")
 /*
+    #config format
+
+    - config
     module.exports = {
         "user": "username",
         "password": "password",
         "connectString": "IP:Port/DATABASE"
     }
+    - path : instantclient 경로    
 */
 
 db.initOracleClient({ libDir: path })
@@ -37,14 +41,15 @@ module.exports = {
                     callback(false)
                 } else {
                     console.log("DB connection success")
+                    /* 리턴한 connection 객체 사용 */
                     callback(true, connection)
                 }
             }
         )
     },
     close: (conn) => {
-        console.log("DB Close")
         try {
+            console.log("DB Close")
             conn.close()
         } catch {
             console.log("invalid connection")
@@ -65,7 +70,13 @@ module.exports = {
             }
         })
     },
+    /* 다수의 select 쿼리 처리 */
     multiSelect : (conn, hash, callback) => {
+        /* 
+            hash = {
+                key : {query : "", params : {}}
+            }
+        */
         keys = Object.keys(hash)
         if (keys.length > 0) {
             returnData = {}
@@ -108,7 +119,9 @@ module.exports = {
             }
         })
     },
-    updateBulk: (conn, query, params, callback) => {
+    /* Bulk update */
+    updateBulk: (conn, query, params, callback) => {        
+        /* SQL문이 모두 동일해야 하기 때문에 query replace는 불가 */
         query = funcs.replaceQuery(query, params)
         if (params.length > 0) {
             conn.executeMany(query, {}, (err, result) => {
@@ -127,12 +140,12 @@ module.exports = {
             callback(true, 0)
         }
     },
+    /* 다수의 Bulk update */
     multiUpdateBulk : (conn, hash, callback) => {
         keys = Object.keys(hash)
         if (keys.length > 0) {
             returnData = {}
             keys.forEach((key, i) => {
-                // executeMany는 쿼리 치환이 어려움
                 conn.executeMany(hash[key].query, hash[key].params, (err, result) => {
                     if (err) {
                         console.log("DB multi update bulk error")

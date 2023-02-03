@@ -1,6 +1,5 @@
 module.exports = {
-    sendFail : (res, msg) => {
-        // 임시 세션처리
+    sendFail : (res, msg) => {        
         res.json({
             status: false,
             msg: `[${res.req._parsedOriginalUrl.path}] ${msg}`,
@@ -15,6 +14,7 @@ module.exports = {
         })
     },
     replaceQuery : (query, params) => {
+        /* 쿼리에 @key를 치환 */
         Object.entries(params).forEach((param) => {
             const key = param[0]
             let value = param[1]            

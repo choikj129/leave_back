@@ -4,14 +4,14 @@ let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
 let kakaowork = require("../exports/kakaowork");
 
-/* GET home page. */
+/* 휴가 일정 페이지 접속 (이벤트 목록) */
 router.get('/', (req, res, next) => {
     const id = req.query.id
     db.connection((succ, conn) => {
         if (succ) {
             try {
                 const sql = req.session.user.isManager 
-                    ? `SELECT IDX, 이름 || ' ' || 내용 내용, 시작일, 종료일, 휴가일수 FROM LEAVE L, EMP E where L.아이디 = E.아이디 ORDER BY 내용`
+                    ? `SELECT IDX, 이름 || ' ' || 직위 || ' ' || 내용 내용, 시작일, 종료일, 휴가일수 FROM LEAVE L, EMP E where L.아이디 = E.아이디 ORDER BY 내용`
                     : `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE where 아이디 = @id ORDER BY 내용`
                 db.select(conn, sql, { id: id }, (succ, rows) => {
                     if (succ) {
@@ -30,7 +30,7 @@ router.get('/', (req, res, next) => {
         }
     })
 });
-
+/* 휴가 신청 */
 router.post('/', (req, res, next) => {
     db.connection((succ, conn) => {
         if (succ) {
@@ -67,10 +67,10 @@ router.post('/', (req, res, next) => {
                             let param = params[i]
                             seq++
                             if (param.updateType == "I") {
-                                dbHash.leaveInsert = dbHash.leaveInsert == undefined 
+                                dbHash.leaveInsert = !dbHash.leaveInsert
                                     ? {query : leaveInsert, params : []}
                                     : dbHash.leaveInsert
-                                dbHash.leaveDetailInsert = dbHash.leaveDetailInsert == undefined 
+                                dbHash.leaveDetailInsert = !dbHash.leaveDetailInsert
                                     ? {query : leaveDetailInsert, params : []}
                                     : dbHash.leaveDetailInsert
                                 
@@ -92,10 +92,10 @@ router.post('/', (req, res, next) => {
                                     date.setDate(date.getDate() + 1)
                                 }
                             } else if (param.updateType == "D") {
-                                dbHash.leaveDelete = dbHash.leaveDelete == undefined 
+                                dbHash.leaveDelete = !dbHash.leaveDelete
                                     ? {query : leaveDelete, params : []}
                                     : dbHash.leaveDelete
-                                dbHash.leaveDetailDelete = dbHash.leaveDetailDelete == undefined 
+                                dbHash.leaveDetailDelete = !dbHash.leaveDetailDelete
                                     ? {query : leaveDetailDelete, params : []}
                                     : dbHash.leaveDetailDelete
                                 dbHash.leaveDelete.params.push([param.IDX])
@@ -110,6 +110,7 @@ router.post('/', (req, res, next) => {
                                 funcs.sendSuccess(res, [], "휴가 등록 / 취소 완료")
                                 db.commit(conn)
                                 db.close(conn)
+                                /* 워크로 휴가 신청 정보 전송 */
                                 // if (req.session.user.isManager) {
                                 //     funcs.sendSuccess(res, [], "휴가 등록 / 취소 완료")
                                 //     db.commit(conn)
@@ -144,7 +145,7 @@ router.post('/', (req, res, next) => {
         }
     })
 });
-
+/* 사이트 접속 (휴가 상세 목록) */
 router.get('/lists', (req, res, next) => {
     const id = req.query.id
     db.connection((succ, conn) => {
