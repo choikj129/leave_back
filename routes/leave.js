@@ -146,18 +146,12 @@ router.post('/', (req, res, next) => {
     })
 });
 /* 사이트 접속 (휴가 상세 목록) */
-router.get('/lists', (req, res, next) => {
+router.get('/cnts', (req, res, next) => {
     const id = req.query.id
     db.connection((succ, conn) => {
         if (succ) {
             try {
-                const listsSql = `
-                    SELECT LD.*, L.아이디, SUBSTR(LD.휴가일, 0, 4) 연도, DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
-                    FROM LEAVE_DETAIL LD, LEAVE L 
-                    WHERE LD.LEAVE_IDX = L.IDX AND 아이디=@id 
-                    ORDER BY 연도 DESC, 휴가일
-                `
-                const cntsSql = `
+                const sql = `
                     SELECT DISTINCT(A.연도), A.아이디, NVL(LC.휴가수, 0) 휴가수, NVL(사용휴가수, 0) 사용휴가수
                     FROM (
                         SELECT 연도,아이디 FROM LEAVE_CNT WHERE 아이디 = @id
@@ -185,12 +179,7 @@ router.get('/lists', (req, res, next) => {
                         WHERE 아이디 = @id
                     ) LC ON A.연도 = LC.연도
                 `
-                let dbHash = {
-                    lists : {query : listsSql, params : { id: id }},
-                    cnts : {query : cntsSql, params : { id: id }},
-                }
-
-                db.multiSelect(conn, dbHash, (succ, rows) => {
+                db.select(conn, sql, { id: id }, (succ, rows) =>{
                     if (succ) {
                         funcs.sendSuccess(res, rows)                        
                     } else {
