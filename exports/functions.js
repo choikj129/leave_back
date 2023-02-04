@@ -6,7 +6,7 @@ module.exports = {
             data: []
         })
     },
-    sendSuccess : (res, data, msg="") => {
+    sendSuccess : (res, data=[], msg="") => {
         res.json({
             status: true,
             msg: `[${res.req._parsedOriginalUrl.path}] ${msg}`,

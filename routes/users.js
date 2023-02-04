@@ -9,7 +9,7 @@ router.get('/', (req, res, next) => {
 		if (succ) {
 			try {				
 				const sql = `
-					SELECT E.아이디, E.이름, E.직위, E.입사일, @year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, ROUND(ROUND((SYSDATE - TO_DATE(입사일, 'YYYYMMDD')) , 0) / 365, 0) 입사년차
+					SELECT E.아이디, E.이름, E.직위, E.입사일, @year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) 입사년차
 					FROM EMP E 
 						LEFT JOIN (
 							SELECT 아이디, 연도, 휴가수
