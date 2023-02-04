@@ -10,7 +10,10 @@ router.get('/', (req, res, next) => {
 			try {
 				const whereId = !req.session.user.isManager ? `AND E.아이디='${req.session.user.id}'` : ""
 				const sql = `
-					SELECT E.아이디, E.이름, E.직위, E.입사일, @year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) 입사년차
+					SELECT
+						E.아이디, E.이름, C.코드명 직위코드, C.표시내용 직위, E.입사일, 
+						@year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, 
+						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) 입사년차
 					FROM EMP E 
 						LEFT JOIN (
 							SELECT 아이디, 연도, 휴가수
@@ -25,9 +28,10 @@ router.get('/', (req, res, next) => {
 							FROM LEAVE L, LEAVE_DETAIL LD
 							WHERE L.IDX = LD.LEAVE_IDX AND SUBSTR(휴가일, 0, 4) = @year
 							GROUP BY SUBSTR(휴가일, 0, 4), 아이디
-						) LD ON LD.아이디 = E.아이디
-					WHERE 관리자여부 = 'N' ${whereId}
-					ORDER BY 이름
+						) LD ON LD.아이디 = E.아이디,
+						( SELECT * FROM CODE WHERE 코드구분 = '직위' ) C
+					WHERE 관리자여부 = 'N' AND E.직위코드 = C.코드명 ${whereId}
+					ORDER BY 직위코드, 입사일, 이름
 				`
 				db.select(conn, sql, {year : req.query.year}, (succ, rows) => {
 					if (succ) {
@@ -64,7 +68,7 @@ router.post('/update', (req, res, next) => {
 						VALUES (@id, @year, @cnt)
 				`
 				const empSql = `
-					UPDATE EMP SET 직위 = @position, 입사일 = @date WHERE 아이디 = @id
+					UPDATE EMP SET 직위코드 = @position, 입사일 = @date WHERE 아이디 = @id
 				`
 				db.update(conn, sql, req.body.userInfo, (succ, rows) => {
 					if (succ) {
@@ -187,7 +191,7 @@ router.post('/insert', (req, res, next) => {
 		if (succ) {
 			try {
 				const sql = `
-					INSERT INTO EMP (아이디, 이름, 직위, 입사일)
+					INSERT INTO EMP (아이디, 이름, 직위코드, 입사일)
 					VALUES (@id, @name, @position, @date)
 				`
 				db.update(conn, sql, {

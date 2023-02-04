@@ -1,6 +1,6 @@
 let express = require('express');
 let router = express.Router();
-let dbconfig = require("../exports/oracle")
+let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
 
 /* GET home page. */
@@ -13,6 +13,30 @@ router.get('/logout', (req, res, next) => {
 			funcs.sendSuccess(res)
 		}
 		console.log(req.session)
+	})
+});
+
+router.get('/code', (req, res, next) => {
+	db.connection((succ, conn) => {
+		if (succ) {
+			try {
+				const sort = req.query.reverse != undefined && req.query.reverse ? "DESC" : "ASC"
+				const sql = `SELECT 코드명, 표시내용 FROM CODE WHERE 코드구분 = @name AND 사용여부 = 'Y' ORDER BY 코드명 ${sort}`
+				db.select(conn, sql, {name : req.query.name}, (succ, rows) => {
+					if (succ) {
+						funcs.sendSuccess(res, rows)
+					} else {
+						funcs.sendFail(res, "DB 조회 중 에러")
+					}
+					db.close(conn)
+				})
+			} catch {
+				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
+				db.close(conn)
+			}
+		} else {
+			funcs.sendFail(res, "DB 연결 실패")
+		}
 	})
 });
 
