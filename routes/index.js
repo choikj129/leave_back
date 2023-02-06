@@ -1,10 +1,12 @@
-let express = require('express');
+let express = require("express");
 let router = express.Router();
+let fs = require("fs");
+let path = require("path");
 let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
 
 /* GET home page. */
-router.get('/logout', (req, res, next) => {
+router.get("/logout", (req, res, next) => {
 	req.session.destroy(function (err) {
 		if (err) {
 			console.log(err);
@@ -12,11 +14,26 @@ router.get('/logout', (req, res, next) => {
 		} else {
 			funcs.sendSuccess(res)
 		}
-		console.log(req.session)
 	})
 });
 
-router.get('/code', (req, res, next) => {
+router.get("/download", (req, res, next) => {
+	console.log(`${__dirname}`)
+	const filePath = `${__dirname}/../public/files/`
+	let fileName = "어다인_휴가관리_사용자_매뉴얼.pdf"
+	if (req.session.user.isManager) {
+			fileName = "어다인_휴가관리_관리자_매뉴얼.pdf"
+		}
+	const file = filePath + fileName
+		
+	res.download(path.resolve(file), fileName, (result, err) => {
+		if (err) {
+			console.log(err)
+		}
+	})
+});
+
+router.get("/code", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {

@@ -13,3 +13,4 @@ exports/config/*
 *.ntvs*
 *.njsproj
 *.sln
+*.pdf

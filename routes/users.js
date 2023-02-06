@@ -13,7 +13,7 @@ router.get('/', (req, res, next) => {
 					SELECT
 						E.아이디, E.이름, C.코드명 직위코드, C.표시내용 직위, E.입사일, 
 						@year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, 
-						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) 입사년차
+						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) + 1 입사년차
 					FROM EMP E 
 						LEFT JOIN (
 							SELECT 아이디, 연도, 휴가수
