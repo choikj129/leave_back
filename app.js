@@ -1,9 +1,10 @@
 let createError = require('http-errors');
 let express = require('express');
 let session = require('express-session');
+let moment = require("moment")
 let path = require('path');
 let cookieParser = require('cookie-parser');
-let logger = require('morgan');
+let morgan = require('morgan');
 let interceptor = require("./exports/interceptor")
 
 
@@ -17,7 +18,10 @@ let app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-app.use(logger('[:date[iso]] :method :url :status'));
+morgan.format("dateTime", (req, res) => {
+  return moment().format("YYYY-MM-DD HH:mm:ss")
+})
+app.use(morgan('[:dateTime] :method :url :status'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -28,13 +32,13 @@ app.use(
     secret : "odinue",
     resave : false,
     saveUninitialized : true,
-    maxAge : 24 * 60 * 60 * 1000   // ¼¼¼Ç À¯Áö ±â°£ : ÇÏ·ç
+    maxAge : 24 * 60 * 60 * 1000   // ì„¸ì…˜ ìœ ì§€ ê¸°ê°„ : í•˜ë£¨
   })
 )
 
 app.use((req, res, next) => {
   const isSession = interceptor.session(req)
-  if (req._parsedOriginalUrl.path == "/login" || isSession) {
+  if (isSession || req._parsedOriginalUrl.path == "/login" || req._parsedOriginalUrl.path.endsWith("/test")) {
     next()
   } else {
     res.json({status : false, msg : "no session", data : []})
