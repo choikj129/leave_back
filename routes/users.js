@@ -1,7 +1,9 @@
 var express = require('express');
 var router = express.Router();
+let crypto = require("crypto");
 let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
+let salt = require("../exports/config/crypto");
 
 /* 사이트 관리자 접속 (직원 정보) */
 router.get('/', (req, res, next) => {
@@ -13,7 +15,9 @@ router.get('/', (req, res, next) => {
 					SELECT
 						E.아이디, E.이름, C.코드명 직위코드, C.표시내용 직위, E.입사일, 
 						@year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, 
-						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) + 1 입사년차
+						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) + 1 || '년' ||
+						DECODE(TRUNC(MOD(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD')), 12)), 0, '차', ' ' || TRUNC(MOD(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD')), 12)) || '개월차') 
+						입사년차
 					FROM EMP E 
 						LEFT JOIN (
 							SELECT 아이디, 연도, 휴가수
@@ -189,14 +193,16 @@ router.get('/lists', (req, res, next) => {
 router.post('/insert', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
+			pw = crypto.pbkdf2Sync("odinue2014", salt, 1, 64, "SHA512").toString("base64")
 			try {
 				const sql = `
-					INSERT INTO EMP (아이디, 이름, 직위코드, 입사일)
-					VALUES (@id, @name, @position, @date)
+					INSERT INTO EMP (아이디, 비밀번호, 이름, 직위코드, 입사일)
+					VALUES (@id, @pw, @name, @position, @date)
 				`
 				db.update(conn, sql, {
-					name : req.body.name,
 					id : req.body.id,
+					pw : pw,
+					name : req.body.name,
 					position : req.body.position,
 					date : req.body.date,
 				}, (succ, rows) => {
