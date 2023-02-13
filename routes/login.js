@@ -79,7 +79,6 @@ router.post('/update', (req, res, next) => {
 
 router.post('/test', (req, res, next) => {
 	hash = crypto.pbkdf2Sync(req.body.pw, salt, 1, 64, "SHA512").toString("base64")
-	console.log(hash)
 	funcs.sendSuccess(res)
 });
 module.exports = router;
