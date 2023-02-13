@@ -109,7 +109,7 @@ router.post('/update', (req, res, next) => {
 	})
 });
 /* 휴가 신청 기록 */
-router.get('/logs', (req, res, next) => {
+router.get('/history', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
