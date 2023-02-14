@@ -110,27 +110,16 @@ router.post('/', (req, res, next) => {
                         }
                         db.multiUpdateBulk(conn, dbHash, (succ, result) => {
                             if (succ) {
-                                // funcs.sendSuccess(res, [], "휴가 등록 / 취소 완료")
-                                // db.commit(conn)
-                                // db.close(conn)
-
-                                /* 워크로 휴가 신청 정보 전송 */
-                                if (req.session.user.isManager) {
-                                    funcs.sendSuccess(res, [], "휴가 등록 / 취소 완료")
-                                    db.commit(conn)
+                                kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {
+                                    if (isSend) {
+                                        funcs.sendSuccess(res, [], "카카오워크 전송 성공")
+                                        db.commit(conn)
+                                    } else {                                                            
+                                        funcs.sendFail(res, "카카오워크 전송 실패")
+                                        db.rollback(conn)
+                                    }
                                     db.close(conn)
-                                } else {
-                                    kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {
-                                        if (isSend) {
-                                            funcs.sendSuccess(res, [], "카카오워크 전송 성공")
-                                            db.commit(conn)
-                                        } else {                                                            
-                                            funcs.sendFail(res, "카카오워크 전송 실패")
-                                            db.rollback(conn)
-                                        }
-                                        db.close(conn)
-                                    })
-                                }
+                                })                                
                             } else {
                                 funcs.sendFail(res, "휴가 등록 / 취소 실패")
                                 db.close(conn)
