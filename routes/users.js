@@ -114,14 +114,14 @@ router.get('/history', (req, res, next) => {
 		if (succ) {
 			try {
 				const sql = `
-					SELECT L.* 
+					SELECT A.* 
 					FROM (
-						SELECT IDX, 이름, L.아이디, 내용, TO_CHAR(등록일자, 'YYYY-MM-DD HH24:MI:SS') 등록일자 
-						FROM LEAVE L, EMP E 
-						WHERE L.아이디 = E.아이디 
+						SELECT H.IDX, E.이름, E.아이디, H.내용, TO_CHAR(H.등록일자, 'YYYY-MM-DD HH24:MI:SS') 등록일자 
+						FROM HISTORY H, EMP E 
+						WHERE H.아이디 = E.아이디 
 						ORDER BY 등록일자 DESC, 내용 DESC
-					) L 
-					WHERE ROWNUM < 30
+					) A
+					WHERE ROWNUM < 31
 				`
 				db.select(conn, sql, {}, (succ, rows) => {
 					if (succ) {
