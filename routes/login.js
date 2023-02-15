@@ -7,7 +7,9 @@ let salt = require("../exports/config/crypto");
 
 /* GET home page. */
 
-router.post('/', (req, res, next) => {	
+router.post('/', (req, res, next) => {
+	const userAgent = req.get('User-Agent')
+	console.log(`User-Agent : ${userAgent}`)
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -31,7 +33,7 @@ router.post('/', (req, res, next) => {
 								position: data.직위,
 								isManager : data.관리자여부 == "Y" ? true : false,
 								isLogin : true,
-								isMobile : /mobile/i.test(req.get('User-Agent')), 
+								isMobile : /mobile/i.test(userAgent), 
 							}
 							funcs.sendSuccess(res, req.session.user)
 						}

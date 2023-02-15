@@ -7,16 +7,19 @@ let kakaowork = require("../exports/kakaowork");
 /* 휴가 일정 페이지 접속 (이벤트 목록) */
 router.get('/', (req, res, next) => {
     const id = req.query.id
+    const isAll = JSON.parse(req.query.isAll)
     db.connection((succ, conn) => {
         if (succ) {
             try {
-                const sql = req.session.user.isManager 
+                const sql = isAll
                     ? `
                         SELECT IDX, 이름 || ' ' || 표시내용 || ' ' || 내용 내용, 시작일, 종료일, 휴가일수 
                         FROM LEAVE L, EMP E, ( SELECT * FROM CODE WHERE 코드구분 = '직위' ) C
                         WHERE L.아이디 = E.아이디 AND E.직위코드 = C.코드명 
-                        ORDER BY 내용`
+                        ORDER BY 내용
+                    `
                     : `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE where 아이디 = @id ORDER BY 내용`
+
                 db.select(conn, sql, { id: id }, (succ, rows) => {
                     if (succ) {
                         funcs.sendSuccess(res, rows)                        
@@ -60,15 +63,21 @@ router.post('/', (req, res, next) => {
                 const leaveDetailDelete = `
                     DELETE FROM LEAVE_DETAIL WHERE LEAVE_IDX = :1
                 `
+                const logsInsert = `
+                    INSERT INTO HISTORY (아이디, 내용)
+                    VALUES (:id, :name)
+                `
                 db.select(conn, seqSelect, {}, (succ, rows) => {
                     if (!succ) {
                         funcs.sendFail(res, "DB 조회 중 에러")
                     } else {
                         let dbHash = {}
+                        dbHash.logs = {query : logsInsert, params : []}
                         let seq = rows[0].SEQ
                         let kakaoWorkArr = []
                         for (i = 0; i < params.length; i++) {
                             let param = params[i]
+                            dbHash.logs.params.push({id : id, name : param.name})
                             seq++
                             if (param.updateType == "I") {
                                 dbHash.leaveInsert = !dbHash.leaveInsert
@@ -105,6 +114,7 @@ router.post('/', (req, res, next) => {
                                 dbHash.leaveDelete.params.push([param.IDX])
                                 dbHash.leaveDetailDelete.params.push([param.IDX])
                             }
+
                             kakaoWorkArr.push(param.name)
 
                         }
