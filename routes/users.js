@@ -159,7 +159,7 @@ router.get('/lists', (req, res, next) => {
 				const listsSql = `
 					SELECT 
 						LD.IDX,
-						LD.휴가일,
+						LD.휴가일 || ' (' || TO_CHAR(TO_DATE(LD.휴가일, 'YYYY-MM-DD'), 'DY','NLS_DATE_LANGUAGE=KOREAN') || ')' 휴가일,
 						LD.휴가구분,
 						LD.기타휴가내용 || ' 휴가' 기타휴가내용,
 						E.아이디,
