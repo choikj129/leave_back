@@ -46,7 +46,8 @@ module.exports = {
             단체 채팅방 ID (TEST): 5385099
         */
         const conId = 5569973
-        const text = `${user.name} [${user.id}]\n${contents.join("\n")}`
+        // const text = `${user.name} [${user.id}]\n${contents.join("\n")}`
+        const text = `${user.name}\n${contents.join("\n")}`
         sendKW(conId, text).then((succ) => {
             callback(succ)
         })
