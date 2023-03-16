@@ -1,15 +1,15 @@
-# °³¹ß Á¤º¸
+# ê°œë°œ ì •ë³´
  - node version : 16.17.0
  - npm version : 9.2.0
 
 # npm script
- - ±âµ¿ : npm run start
+ - ê¸°ë™ : npm run start
 
-# Back ÃÊ±â ¼³Á¤
- ### exports/config µğ·ºÅÍ¸®´Â º¸¾È »ó ÀÌ½´·Î ignore µÇ¾îÀÖ¾î aws server¿¡¼­ °¡Á®¿Í¾ßÇÔ.
- - apiKey.js : µ¿ÀÏ
- - clientPath.js :  oracledb¸¦ »ç¿ëÇÏ±â À§ÇØ instantclient_21_8 µğ·ºÅÍ¸®°¡ ÇÊ¿ä <br>
-  (ÇØ´ç µğ·ºÅÍ¸®´Â NAS/¼³Ä¡ÆÄÀÏ/instantclient_*.zip ÆÄÀÏÀ» ¹Ş°í<br> µğ·ºÅÍ¸® °æ·Î¸¦ clientPath.js¿¡ ¸ÂÃçÁÖ¸é µÊ)
- - crypto.js : µ¿ÀÏ
- - db_connect.js : ·ÎÄÃ¿¡¼­ °³¹ßÇÒ ¶§ **¹İµå½Ã °³¹ß DB·Î ¹Ù²ã¼­ °³¹ßÇØ¾ßÇÔ**
- - conversation_id.js : ·ÎÄÃ¿¡¼­ °³¹ßÇÒ ¶§ **¹İµå½Ã ID¸¦ ´ÜÃ¼ Ã¤ÆÃ¹æ ID (TEST)·Î ¹Ù²ã¼­ °³¹ßÇØ¾ßÇÔ**
+# Back ì´ˆê¸° ì„¤ì •
+ ### exports/config ë””ë ‰í„°ë¦¬ëŠ” ë³´ì•ˆ ìƒ ì´ìŠˆë¡œ ignore ë˜ì–´ìˆì–´ aws serverì—ì„œ ê°€ì ¸ì™€ì•¼í•¨.
+ - apiKey.js : ë™ì¼
+ - clientPath.js :  oracledbë¥¼ ì‚¬ìš©í•˜ê¸° ìœ„í•´ instantclient_21_8 ë””ë ‰í„°ë¦¬ê°€ í•„ìš” <br>
+  (í•´ë‹¹ ë””ë ‰í„°ë¦¬ëŠ” NAS/ì„¤ì¹˜íŒŒì¼/instantclient_*.zip íŒŒì¼ì„ ë°›ê³ <br> ë””ë ‰í„°ë¦¬ ê²½ë¡œë¥¼ clientPath.jsì— ë§ì¶°ì£¼ë©´ ë¨)
+ - crypto.js : ë™ì¼
+ - db_connect.js : ë¡œì»¬ì—ì„œ ê°œë°œí•  ë•Œ **ë°˜ë“œì‹œ ê°œë°œ DBë¡œ ë°”ê¿”ì„œ ê°œë°œí•´ì•¼í•¨**
+ - conversation_id.js : ë¡œì»¬ì—ì„œ ê°œë°œí•  ë•Œ **ë°˜ë“œì‹œ IDë¥¼ ë‹¨ì²´ ì±„íŒ…ë°© ID (TEST)ë¡œ ë°”ê¿”ì„œ ê°œë°œí•´ì•¼í•¨**
