@@ -1,5 +1,6 @@
 let axios = require("axios")
-let apiKey = require("./config/apiKey");
+let apiKey = require("./config/apiKey")
+let conversationId = require("./config/conversation_id")
 
 axios.default.post["Content-Type"] = "application/json"
 axios.defaults.baseURL = "https://api.kakaowork.com/v1"
@@ -45,7 +46,7 @@ module.exports = {
             단체 채팅방 ID       : 5569973
             단체 채팅방 ID (TEST): 5385099
         */
-        const conId = 5569973
+        const conId = conversationId
         // const text = `${user.name} [${user.id}]\n${contents.join("\n")}`
         const text = `${user.name}\n${contents.join("\n")}`
         sendKW(conId, text).then((succ) => {
