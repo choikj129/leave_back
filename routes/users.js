@@ -14,14 +14,14 @@ router.get('/', (req, res, next) => {
 				const sql = `
 					SELECT
 						E.아이디, E.이름, C.코드명 직위코드, C.표시내용 직위, E.입사일, 
-						@year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, 
+						:year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, 
 						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) + 1 || '년차'
 						입사년차
 					FROM EMP E 
 						LEFT JOIN (
 							SELECT 아이디, 연도, 휴가수
 							FROM LEAVE_CNT
-							WHERE 연도 = @year
+							WHERE 연도 = :year
 						) LC ON E.아이디 = LC.아이디
 						LEFT JOIN (
 							SELECT 	
@@ -29,7 +29,7 @@ router.get('/', (req, res, next) => {
 								SUBSTR(휴가일, 0, 4) 연도,	
 								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1)) 사용휴가수			
 							FROM LEAVE L, LEAVE_DETAIL LD
-							WHERE L.IDX = LD.LEAVE_IDX AND SUBSTR(휴가일, 0, 4) = @year
+							WHERE L.IDX = LD.LEAVE_IDX AND SUBSTR(휴가일, 0, 4) = :year
 							GROUP BY SUBSTR(휴가일, 0, 4), 아이디
 						) LD ON LD.아이디 = E.아이디,
 						( SELECT * FROM CODE WHERE 코드구분 = '직위' ) C
@@ -61,17 +61,17 @@ router.post('/update', (req, res, next) => {
 				const sql = `
 					MERGE INTO LEAVE_CNT USING DUAL
 						ON (
-							연도 = @year
-							AND 아이디 = @id
+							연도 = :year
+							AND 아이디 = :id
 						)
 					WHEN MATCHED THEN
-						UPDATE SET 휴가수 = @cnt
+						UPDATE SET 휴가수 = :cnt
 					WHEN NOT MATCHED THEN
 						INSERT (아이디, 연도, 휴가수)
-						VALUES (@id, @year, @cnt)
+						VALUES (:id, :year, :cnt)
 				`
 				const empSql = `
-					UPDATE EMP SET 직위코드 = @position, 입사일 = @date WHERE 아이디 = @id
+					UPDATE EMP SET 직위코드 = :position, 입사일 = :date WHERE 아이디 = :id
 				`
 				db.update(conn, sql, req.body.userInfo, (succ, rows) => {
 					if (succ) {
@@ -149,7 +149,7 @@ router.get('/lists', (req, res, next) => {
 					? `
 						SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
 						FROM LEAVE_DETAIL LD, LEAVE L
-						WHERE LD.LEAVE_IDX = L.IDX AND L.아이디 = @id
+						WHERE LD.LEAVE_IDX = L.IDX AND L.아이디 = :id
 					`
 					: `
 						SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
@@ -165,7 +165,7 @@ router.get('/lists', (req, res, next) => {
 						SUBSTR(LD.휴가일, 0, 4) 연도,
 						DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
 					FROM LEAVE_DETAIL LD, LEAVE L, EMP E 
-					WHERE LD.LEAVE_IDX = L.IDX AND E.아이디 = L.아이디 AND E.아이디 = @id AND SUBSTR(LD.휴가일, 0, 4) = @year
+					WHERE LD.LEAVE_IDX = L.IDX AND E.아이디 = L.아이디 AND E.아이디 = :id AND SUBSTR(LD.휴가일, 0, 4) = :year
 					ORDER BY 휴가일
 				`
 				db.multiSelect(conn, {
@@ -196,7 +196,7 @@ router.post('/insert', (req, res, next) => {
 			try {
 				const sql = `
 					INSERT INTO EMP (아이디, 비밀번호, 이름, 직위코드, 입사일)
-					VALUES (@id, @pw, @name, @position, @date)
+					VALUES (:id, :pw, :name, :position, :date)
 				`
 				db.update(conn, sql, {
 					id : req.body.id,
@@ -229,7 +229,7 @@ router.get('/delete', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
-				const sql = `DELETE FROM EMP WHERE 아이디 = @id`
+				const sql = `DELETE FROM EMP WHERE 아이디 = :id`
 				db.select(conn, sql, {id : req.query.id}, (succ, rows) => {
 					if (succ) {
 						funcs.sendSuccess(res, rows)

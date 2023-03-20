@@ -21,7 +21,7 @@ module.exports = {
             if (typeof value == "string") {
                 value = `'${value}'`
             }
-            query = query.replaceAll(`@${key}`, value)
+            query = query.replaceAll(`:${key}`, value)
         })
         return query
     }
