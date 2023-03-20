@@ -1,5 +1,5 @@
 let axios = require("axios")
-let apiKey = require("./config/apiKey")
+let apiKey = require("./config/apiKey").kakaowork
 let conversationId = require("./config/conversation_id")
 
 axios.default.post["Content-Type"] = "application/json"

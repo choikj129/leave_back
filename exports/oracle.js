@@ -66,6 +66,7 @@ module.exports = {
                 console.error(err)
                 callback(false)
             } else {
+                console.log("DB select success")
                 callback(true, result.rows)
             }
         })
@@ -94,12 +95,14 @@ module.exports = {
                     } else {
                         returnData[key] = result.rows
                         if (i == keys.length -1) {
+                            console.log("DB multi select success")
                             callback(true, returnData)
                         }
                     }
                 })
             })
         } else {
+            console.log("No hash keys [multi select]")
             callback(true, 0)
         }
         
@@ -115,16 +118,19 @@ module.exports = {
                 console.error(err)
                 callback(false)
             } else {
+                console.log("DB update success")
                 callback(true, result.rowsAffected)
             }
         })
     },
     /* Bulk update */
     updateBulk: (conn, query, params, callback) => {        
-        /* SQL문이 모두 동일해야 하기 때문에 query replace는 불가 */
-        query = funcs.replaceQuery(query, params)
+        /* 
+            SQL문이 모두 동일해야 하기 때문에 query replace는 불가
+        */
+        params = funcs.queryParamsFilter(query, params)
         if (params.length > 0) {
-            conn.executeMany(query, {}, (err, result) => {
+            conn.executeMany(query, params, (err, result) => {
                 if (err) {
                     console.log("DB update bulk error")
                     console.log("==========================================================")
@@ -133,10 +139,12 @@ module.exports = {
                     console.error(err)
                     callback(false)
                 } else {
+                    console.log("DB update bulk success")
                     callback(true, result.rowsAffected)
                 }
             })
         }else {
+            console.log("No params data [update bulk]")
             callback(true, 0)
         }
     },
@@ -158,12 +166,14 @@ module.exports = {
                     } else {
                         returnData[key] = result.rowsAffected
                         if (i == keys.length -1) {
+                            console.log("DB multi update bulk success")
                             callback(true, returnData)
                         }
                     }
                 })
             })
         } else {
+            console.log("No params data [multi update bulk]")
             callback(true, 0)
         }
     },

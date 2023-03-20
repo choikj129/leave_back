@@ -2,8 +2,7 @@ let express = require('express');
 let router = express.Router()
 let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
-let kakaowork = require("../exports/kakaowork");
-let holidayKey = require("../exports/config/holiday")
+let holidayKey = require("../exports/config/apiKey").holiday
 const axios = require("axios");
 
 /* 공휴일 목록 불러오기 */

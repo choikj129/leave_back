@@ -24,5 +24,19 @@ module.exports = {
             query = query.replaceAll(`:${key}`, value)
         })
         return query
+    },
+    queryParamsFilter : (query, params) => {
+        let match = query.match(/:[\w$ㄱ-ㅎㅏ-ㅣ가-힣]+/g)
+        let returnParams = []
+        params.forEach(param => {
+            let paramMap = {}
+            match.forEach(matchValue => {
+                matchValue = matchValue.substring(1)
+                paramMap[matchValue] = param[matchValue]
+            })
+            returnParams.push(paramMap)	
+        })
+
+        return returnParams
     }
 }
