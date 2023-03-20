@@ -38,7 +38,7 @@ router.get("/code", (req, res, next) => {
 		if (succ) {
 			try {
 				const sort = req.query.reverse != undefined && req.query.reverse ? "DESC" : "ASC"
-				const sql = `SELECT 코드명, 표시내용 FROM CODE WHERE 코드구분 = @name AND 사용여부 = 'Y' ORDER BY 코드명 ${sort}`
+				const sql = `SELECT 코드명, 표시내용 FROM CODE WHERE 코드구분 = :name AND 사용여부 = 'Y' ORDER BY 코드명 ${sort}`
 				db.select(conn, sql, {name : req.query.name}, (succ, rows) => {
 					if (succ) {
 						funcs.sendSuccess(res, rows)

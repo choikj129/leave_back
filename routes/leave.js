@@ -18,7 +18,7 @@ router.get('/', (req, res, next) => {
                         WHERE L.아이디 = E.아이디 AND E.직위코드 = C.코드명 
                         ORDER BY 내용
                     `
-                    : `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE where 아이디 = @id ORDER BY 내용`
+                    : `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE where 아이디 = :id ORDER BY 내용`
 
                 db.select(conn, sql, { id: id }, (succ, rows) => {
                     if (succ) {
@@ -157,11 +157,11 @@ router.get('/cnts', (req, res, next) => {
                 const sql = `
                     SELECT DISTINCT(A.연도), A.아이디, NVL(LC.휴가수, 0) 휴가수, NVL(사용휴가수, 0) 사용휴가수
                     FROM (
-                        SELECT 연도,아이디 FROM LEAVE_CNT WHERE 아이디 = @id
+                        SELECT 연도,아이디 FROM LEAVE_CNT WHERE 아이디 = :id
                         UNION ALL
                         SELECT SUBSTR(휴가일, 0, 4) 연도, 아이디
                         FROM LEAVE L, LEAVE_DETAIL LD
-                        WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = @id
+                        WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = :id
                         GROUP BY SUBSTR(휴가일, 0, 4), 아이디
                     ) A 
                     LEFT JOIN (
@@ -170,7 +170,7 @@ router.get('/cnts', (req, res, next) => {
                             SUBSTR(휴가일, 0, 4) 연도,	
                             SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1)) 사용휴가수         
                         FROM LEAVE L, LEAVE_DETAIL LD
-                        WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = @id
+                        WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = :id
                         GROUP BY SUBSTR(휴가일, 0, 4), 아이디
                     ) L ON A.연도 = L.연도
                     LEFT JOIN (
@@ -179,7 +179,7 @@ router.get('/cnts', (req, res, next) => {
                             연도,    	
                             휴가수        
                         FROM LEAVE_CNT
-                        WHERE 아이디 = @id
+                        WHERE 아이디 = :id
                     ) LC ON A.연도 = LC.연도
                 `
                 db.select(conn, sql, { id: id }, (succ, rows) =>{

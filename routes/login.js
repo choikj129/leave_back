@@ -17,7 +17,7 @@ router.post('/', (req, res, next) => {
 				const sql = `
 					SELECT 아이디, 이름, 관리자여부, 코드명 직위코드, 표시내용 직위
 					FROM EMP E, ( SELECT * FROM CODE WHERE 코드구분 = '직위' ) C
-					WHERE E.직위코드 = C.코드명 AND 아이디 = @id AND 비밀번호 = @pw`
+					WHERE E.직위코드 = C.코드명 AND 아이디 = :id AND 비밀번호 = :pw`
 				const params = { id: req.body.id, pw: pw }
 				db.select(conn, sql, params, (succ, rows) => {
 					if (!succ) {
@@ -57,7 +57,7 @@ router.post('/update', (req, res, next) => {
 			try {
 				pw = crypto.pbkdf2Sync(req.body.pw, salt, 1, 64, "SHA512").toString("base64")
 				const sql = `
-					UPDATE EMP SET 비밀번호 = @pw WHERE 아이디 = @id`
+					UPDATE EMP SET 비밀번호 = :pw WHERE 아이디 = :id`
 				const params = { id: req.body.id, pw: pw }
 				db.update(conn, sql, params, (succ, rows) => {
 					if (!succ) {
