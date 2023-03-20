@@ -12,6 +12,7 @@ let indexRouter = require('./routes/index');
 let loginRouter = require('./routes/login');
 let leaveRouter = require('./routes/leave');
 let usersRouter = require('./routes/users');
+let cronRouter = require('./routes/cron');
 let app = express();
 
 // view engine setup
@@ -49,6 +50,7 @@ app.use('/', indexRouter);
 app.use('/leave', leaveRouter);
 app.use('/login', loginRouter);
 app.use('/users', usersRouter);
+app.use('/cron', cronRouter);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {  
