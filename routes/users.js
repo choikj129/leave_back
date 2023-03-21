@@ -10,14 +10,12 @@ router.get('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
-				const whereId = !req.session.user.isManager ? `AND E.아이디='${req.session.user.id}'` : ""
 				const sql = `
 					SELECT
 						E.아이디, E.이름, C.코드명 직위코드, C.표시내용 직위, E.입사일, 
-						:year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, 
-						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) + 1 || '년차'
-						입사년차
-					FROM EMP E 
+						:year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, NVL(R.추가휴가수, 0) 추가휴가수, NVL(LD.사용추가휴가수, 0) 사용추가휴가수,
+						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) + 1 || '년차' 입사년차
+					FROM EMP E
 						LEFT JOIN (
 							SELECT 아이디, 연도, 휴가수
 							FROM LEAVE_CNT
@@ -27,13 +25,23 @@ router.get('/', (req, res, next) => {
 							SELECT 	
 								아이디,
 								SUBSTR(휴가일, 0, 4) 연도,	
-								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1)) 사용휴가수			
+								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, '포상', 0, 1)) 사용휴가수,
+								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '포상', 1, 0)) 사용추가휴가수
 							FROM LEAVE L, LEAVE_DETAIL LD
 							WHERE L.IDX = LD.LEAVE_IDX AND SUBSTR(휴가일, 0, 4) = :year
 							GROUP BY SUBSTR(휴가일, 0, 4), 아이디
-						) LD ON LD.아이디 = E.아이디,
+						) LD ON LD.아이디 = E.아이디
+						LEFT JOIN (
+							SELECT
+								아이디, SUM(휴가일수) 추가휴가수
+							FROM REWARD
+							WHERE 
+								등록일 BETWEEN :year||'0101' AND :year||'1231' OR 
+								(만료일 BETWEEN :year||'0101' AND :year||'1231' AND 휴가일수 > 사용일수)
+							GROUP BY 아이디
+						) R ON E.아이디 = R.아이디,
 						( SELECT * FROM CODE WHERE 코드구분 = '직위' ) C
-					WHERE 관리자여부 = 'N' AND E.직위코드 = C.코드명 ${whereId}
+					WHERE 관리자여부 = 'N' AND E.직위코드 = C.코드명
 					ORDER BY 직위코드, 입사일, 이름
 				`
 				db.select(conn, sql, {year : req.query.year}, (succ, rows) => {
@@ -58,45 +66,19 @@ router.post('/update', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
-				const sql = `
-					MERGE INTO LEAVE_CNT USING DUAL
-						ON (
-							연도 = :year
-							AND 아이디 = :id
-						)
-					WHEN MATCHED THEN
-						UPDATE SET 휴가수 = :cnt
-					WHEN NOT MATCHED THEN
-						INSERT (아이디, 연도, 휴가수)
-						VALUES (:id, :year, :cnt)
-				`
 				const empSql = `
 					UPDATE EMP SET 직위코드 = :position, 입사일 = :date WHERE 아이디 = :id
 				`
-				db.update(conn, sql, req.body.userInfo, (succ, rows) => {
+				db.update(conn, empSql, req.body.userInfo,  (succ, rows) => {
 					if (succ) {
-						if (req.body.userInfo.isEmpChange) {
-							db.update(conn, empSql, req.body.userInfo,  (succ, rows) => {
-								if (succ) {
-									funcs.sendSuccess(res, rows)
-									db.commit(conn)
-								} else {
-									funcs.sendFail(res, "DB EMP 업데이트 중 에러")
-									db.rollback(conn)
-								}
-								db.close(conn)
-							})
-						}else {
-							funcs.sendSuccess(res, rows)
-							db.commit(conn)
-							db.close(conn)
-						}
+						funcs.sendSuccess(res, rows)
+						db.commit(conn)
 					} else {
-						funcs.sendFail(res, "DB LEAVE_CNT 업데이트 중 에러")
+						funcs.sendFail(res, "DB EMP 업데이트 중 에러")
 						db.rollback(conn)
-						db.close(conn)
 					}
-				})
+					db.close(conn)
+				})		
 			} catch {
 				funcs.sendFail(res, "DB 업데이트 중 에러 (catch)")
 				db.rollback(conn)
@@ -139,55 +121,7 @@ router.get('/history', (req, res, next) => {
 		}
 	})
 })
-/* 휴가 리스트 */
-router.get('/lists', (req, res, next) => {
-	db.connection((succ, conn) => {
-		if (succ) {
-			try {
-				/* 관리자는 휴가 중 최소 휴가연도, 기본 직원은 본인 신청 최소 휴가연도 */
-				const dateSql = !req.session.user.isManager 
-					? `
-						SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
-						FROM LEAVE_DETAIL LD, LEAVE L
-						WHERE LD.LEAVE_IDX = L.IDX AND L.아이디 = :id
-					`
-					: `
-						SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
-						FROM LEAVE_DETAIL
-					`
-				const listsSql = `
-					SELECT 
-						LD.IDX,
-						LD.휴가일 || ' (' || TO_CHAR(TO_DATE(LD.휴가일, 'YYYY-MM-DD'), 'DY','NLS_DATE_LANGUAGE=KOREAN') || ')' 휴가일,
-						LD.휴가구분,
-						LD.기타휴가내용 || ' 휴가' 기타휴가내용,
-						E.아이디,
-						SUBSTR(LD.휴가일, 0, 4) 연도,
-						DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
-					FROM LEAVE_DETAIL LD, LEAVE L, EMP E 
-					WHERE LD.LEAVE_IDX = L.IDX AND E.아이디 = L.아이디 AND E.아이디 = :id AND SUBSTR(LD.휴가일, 0, 4) = :year
-					ORDER BY 휴가일
-				`
-				db.multiSelect(conn, {
-					lists : {query : listsSql, params : {id : req.query.id, year : req.query.year}},
-					date : {query : dateSql, params : {id : req.session.user.id}},
-				}, (succ, rows) => {
-					if (succ) {
-						funcs.sendSuccess(res, rows)
-					} else {
-						funcs.sendFail(res, "DB 조회 중 에러")
-					}
-					db.close(conn)
-				})				
-			} catch {
-				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
-				db.close(conn)
-			}
-		} else {
-			funcs.sendFail(res, "DB 연결 실패")
-		}
-	})
-})
+
 /* 직원 추가 */
 router.post('/insert', (req, res, next) => {
 	db.connection((succ, conn) => {
