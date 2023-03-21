@@ -57,4 +57,32 @@ router.get("/code", (req, res, next) => {
 	})
 });
 
+/* 공휴일 목록 불러오기 */
+/* 공휴일 리스트 */
+router.get('/holiday', (req, res, next) => {
+	db.connection((succ, conn) => {
+		if (succ) {
+			try {
+				/* 관리자는 휴가 중 최소 휴가연도, 기본 직원은 본인 신청 최소 휴가연도 */
+				const holdaySelect = `SELECT 명칭, 휴일여부, TO_CHAR(날짜,'YYYY') AS 년,TO_CHAR(날짜,'MM') AS 월,TO_CHAR(날짜,'DD') AS 일 
+                                      FROM  HOLIDAY
+                                      WHERE 휴일여부 = 'Y'`;
+				db.select(conn,holdaySelect,"", (succ, rows) => {
+					if (succ) {
+						funcs.sendSuccess(res, rows)
+					} else {
+						funcs.sendFail(res, "DB 조회 중 에러")
+					}
+					db.close(conn)
+				})
+			} catch {
+				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
+				db.close(conn)
+			}
+		} else {
+			funcs.sendFail(res, "DB 연결 실패")
+		}
+	})
+});
+
 module.exports = router;

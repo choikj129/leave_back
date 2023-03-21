@@ -3,15 +3,15 @@ let router = express.Router()
 let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
 let holidayKey = require("../exports/config/apiKey").holiday
+let today = new Date();
 const axios = require("axios");
 
 /* 공휴일 목록 불러오기 */
 router.get('/holiday', (req, res, next) => {
-    const id = req.query.id
-    // const isAll = JSON.parse(req.query.isAll);
+    const thisYear = req.query.year
     let url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo';
     let numOfRows = '100';
-    let solYear = '2022';
+    let solYear = thisYear == null ? today.getFullYear() : thisYear ;
     let _type = 'json';
     axios.get(url,{
         headers :{
@@ -24,7 +24,6 @@ router.get('/holiday', (req, res, next) => {
             ,_type : _type
         }
     }).then(function(response){
-        console.log(response.data.response.body.items.item);
             db.connection((succ, conn) => {
                 // let i=1;
                 if (succ) {
@@ -33,17 +32,12 @@ router.get('/holiday', (req, res, next) => {
                                 `
                                     MERGE INTO HOLIDAY a
                                     USING DUAL
-                                    ON (a.DATENAME = :dateName)
+                                        ON (a.날짜 = to_date(:locdate,'YYYY-MM-DD'))
                                     WHEN NOT MATCHED THEN
-                                        INSERT (a.DATENAME, a.ISHOLIDAY, a.LOCDATE)
-                                        VALUES (:dateName, :isHoliday, to_date(:locdate,'YYYY-MM-DD'))
+                                        INSERT (a.명칭, a.휴일여부, a.날짜, a.수정일자)
+                                        VALUES (:dateName, :isHoliday, to_date(:locdate,'YYYY-MM-DD'),sysdate)
                                 `
                             db.updateBulk(conn, sql,response.data.response.body.items.item , (succ, rows) => {
-                            // db.updateBulk(conn, sql,[{
-                            //     dateName: '기독탄신일',
-                            //     isHoliday: 'Y',
-                            //     locdate: 20221225,
-                            // }] , (succ, rows) => {
                                 if (succ) {
                                     funcs.sendSuccess(res, rows)
                                     db.commit(conn)
