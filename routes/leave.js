@@ -44,6 +44,7 @@ router.post('/', (req, res, next) => {
             try {
                 let params = req.body.events
                 const id = req.body.id
+                const name = req.body.name
                 const seqSelect = "SELECT NVL(MAX(IDX), 0) SEQ FROM LEAVE"
                 const leaveInsert = `
                     INSERT INTO LEAVE 
@@ -114,22 +115,21 @@ router.post('/', (req, res, next) => {
                                 dbHash.leaveDelete.params.push([param.IDX])
                                 dbHash.leaveDetailDelete.params.push([param.IDX])
                             }
-
                             kakaoWorkArr.push(param.name)
-
                         }
                         db.multiUpdateBulk(conn, dbHash, (succ, result) => {
                             if (succ) {
-                                kakaowork.sendMessage(kakaoWorkArr.sort(), req.session.user, (isSend) => {
+                                const contents = `${name}\n${kakaoWorkArr.sort().join("\n")}`
+                                kakaowork.sendMessage(contents, (isSend) => {
                                     if (isSend) {
                                         funcs.sendSuccess(res, [], "카카오워크 전송 성공")
                                         db.commit(conn)
-                                    } else {                                                            
+                                    } else {
                                         funcs.sendFail(res, "카카오워크 전송 실패")
                                         db.rollback(conn)
                                     }
                                     db.close(conn)
-                                })                                
+                                })
                             } else {
                                 funcs.sendFail(res, "휴가 등록 / 취소 실패")
                                 db.close(conn)
@@ -148,6 +148,55 @@ router.post('/', (req, res, next) => {
         }
     })
 });
+/* 휴가 리스트 */
+router.get('/lists', (req, res, next) => {
+	db.connection((succ, conn) => {
+		if (succ) {
+			try {
+				/* 관리자는 휴가 중 최소 휴가연도, 기본 직원은 본인 신청 최소 휴가연도 */
+				const dateSql = !req.session.user.isManager 
+					? `
+						SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
+						FROM LEAVE_DETAIL LD, LEAVE L
+						WHERE LD.LEAVE_IDX = L.IDX AND L.아이디 = :id
+					`
+					: `
+						SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
+						FROM LEAVE_DETAIL
+					`
+				const listsSql = `
+					SELECT 
+						LD.IDX,
+						LD.휴가일 || ' (' || TO_CHAR(TO_DATE(LD.휴가일, 'YYYY-MM-DD'), 'DY','NLS_DATE_LANGUAGE=KOREAN') || ')' 휴가일,
+						LD.휴가구분,
+						LD.기타휴가내용 || ' 휴가' 기타휴가내용,
+						E.아이디,
+						SUBSTR(LD.휴가일, 0, 4) 연도,
+						DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
+					FROM LEAVE_DETAIL LD, LEAVE L, EMP E 
+					WHERE LD.LEAVE_IDX = L.IDX AND E.아이디 = L.아이디 AND E.아이디 = :id AND SUBSTR(LD.휴가일, 0, 4) = :year
+					ORDER BY 휴가일
+				`
+				db.multiSelect(conn, {
+					lists : {query : listsSql, params : {id : req.query.id, year : req.query.year}},
+					date : {query : dateSql, params : {id : req.session.user.id}},
+				}, (succ, rows) => {
+					if (succ) {
+						funcs.sendSuccess(res, rows)
+					} else {
+						funcs.sendFail(res, "DB 조회 중 에러")
+					}
+					db.close(conn)
+				})				
+			} catch {
+				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
+				db.close(conn)
+			}
+		} else {
+			funcs.sendFail(res, "DB 연결 실패")
+		}
+	})
+})
 /* 사이트 접속 (휴가 상세 목록) */
 router.get('/cnts', (req, res, next) => {
     const id = req.query.id
@@ -184,7 +233,7 @@ router.get('/cnts', (req, res, next) => {
                 `
                 db.select(conn, sql, { id: id }, (succ, rows) =>{
                     if (succ) {
-                        funcs.sendSuccess(res, rows)                        
+                        funcs.sendSuccess(res, rows)
                     } else {
                         funcs.sendFail(res, "DB 조회 중 에러")
                     }
