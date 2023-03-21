@@ -6,51 +6,35 @@ axios.default.post["Content-Type"] = "application/json"
 axios.defaults.baseURL = "https://api.kakaowork.com/v1"
 axios.defaults.headers.common["Authorization"] = apiKey
 
-getUserId = (email) => {
-    return axios.get(`/users.find_by_email?email=${email}`)
-        .then((res) => {
-            if (!res.data.success) {
-                return false
-            }            
-            return res.data.user.id            
-        })
-}
-
-conversationOpen = (id) => {
-    return axios.post("/conversations.open", {
-        "user_id" : id
-    }).then((res) => {     
-        if (!res.data.success) {
-            return false
-        }
-        return res.data.conversation.id
-    })
-}
-
-sendKW = (id, text) => {
-    return axios.post("/messages.send", {
-        "conversation_id" : id,
-        "text" : text
-    }).then((res) => {
-        if (!res.data.success) {
-            return false
-        }
-        return true
-    })
-}
-
 module.exports = {
-    sendMessage : function(contents, user, callback) {
-        /* 
-            개발자 1:1 채팅방 ID : 5232329 
-            단체 채팅방 ID       : 5569973
-            단체 채팅방 ID (TEST): 5385099
-        */
-        const conId = conversationId
-        // const text = `${user.name} [${user.id}]\n${contents.join("\n")}`
-        const text = `${user.name}\n${contents.join("\n")}`
-        sendKW(conId, text).then((succ) => {
-            callback(succ)
+    getUserId : (contents, callback) => {
+        axios.get(`/users.find_by_email?email=${email}`)
+            .then((res) => {
+                if (!res.data.success) {
+                    callback(false, null)
+                }            
+                callback(true, res.data.user.id)
+            })
+    },
+    conversationOpen : (id, callback) => {
+        axios.post("/conversations.open", {
+            "user_id" : id
+        }).then((res) => {     
+            if (!res.data.success) {
+                callback(false, null)
+            }
+            callback(true, res.data.conversation.id)
+        })
+    },
+    sendMessage : (contents, callback) => {
+        axios.post("/messages.send", {
+            "conversation_id" : conversationId,
+            "text" : contents
+        }).then((res) => {
+            if (!res.data.success) {
+                callback(false)
+            }
+            callback(true)
         })
     },
 }
