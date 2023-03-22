@@ -249,4 +249,39 @@ router.get('/cnts', (req, res, next) => {
     })
 });
 
+/* 사이트 접속 (휴가 상세 목록) */
+router.post('/cnt/update', (req, res, next) => {
+    db.connection((succ, conn) => {
+        if (succ) {
+            try {
+                const sql = `
+                    UPDATE LEAVE_CNT
+                    SET 휴가수 = :cnt
+                    WHERE 
+                        아이디 = :id 
+                        AND 연도 = :year
+                `
+                console.log(req.body)
+                db.select(conn, sql, req.body, (succ, rows) => {
+                        if (succ) {
+                            funcs.sendSuccess(res, rows)
+                            db.commit(conn)
+                        } else {
+                            funcs.sendFail(res, "DB 업데이트 중 에러")
+                            db.rollback(conn)
+                        }
+                        db.close(conn)
+                    }
+                )
+            } catch {
+                funcs.sendFail(res, "DB 업데이트 중 에러 (catch)")
+                db.rollback(conn)
+                db.close(conn)
+            }
+        } else {
+            funcs.sendFail(res, "DB 연결 실패")
+        }
+    })
+});
+
 module.exports = router;

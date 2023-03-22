@@ -9,9 +9,13 @@ router.get('/', (req, res, next) => {
 		if (succ) {
 			try {
 				const sql = `
-                    SELECT * FROM REWARD ORDER BY 등록일 DESC
+                    SELECT * 
+                    FROM REWARD 
+                    WHERE 
+                        아이디 = :id
+                    ORDER BY 등록일 DESC
                 `
-				db.select(conn, sql, {}, (succ, rows) =>{
+				db.select(conn, sql, req.query, (succ, rows) =>{
                     if (succ) {
                         funcs.sendSuccess(res, rows)
                     } else {

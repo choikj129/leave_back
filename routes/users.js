@@ -13,7 +13,10 @@ router.get('/', (req, res, next) => {
 				const sql = `
 					SELECT
 						E.아이디, E.이름, C.코드명 직위코드, C.표시내용 직위, E.입사일, 
-						:year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, NVL(R.추가휴가수, 0) 추가휴가수, NVL(LD.사용추가휴가수, 0) 사용추가휴가수,
+						:year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, NVL(LD.기타휴가수, 0) 기타휴가수,
+						NVL(RF.리프레시휴가수, 0) 리프레시휴가수, NVL(LD.사용리프레시휴가수, 0) 사용리프레시휴가수,
+						NVL(RR.포상휴가수, 0) 포상휴가수, NVL(LD.사용포상휴가수, 0) 사용포상휴가수,
+						NVL(RF.리프레시휴가수 + RR.포상휴가수, 0) 추가휴가수, NVL(LD.사용포상휴가수 + LD.사용리프레시휴가수, 0) 사용추가휴가수,
 						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) + 1 || '년차' 입사년차
 					FROM EMP E
 						LEFT JOIN (
@@ -25,21 +28,38 @@ router.get('/', (req, res, next) => {
 							SELECT 	
 								아이디,
 								SUBSTR(휴가일, 0, 4) 연도,	
-								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, '포상', 0, 1)) 사용휴가수,
-								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '포상', 1, 0)) 사용추가휴가수
+								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, '포상', 0, '리프레시', 0, 1)) 사용휴가수,
+								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '포상', 1, 0)) 사용포상휴가수,
+								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '리프레시', 1, 0)) 사용리프레시휴가수,
+								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '기타', 1, 0)) 기타휴가수
 							FROM LEAVE L, LEAVE_DETAIL LD
 							WHERE L.IDX = LD.LEAVE_IDX AND SUBSTR(휴가일, 0, 4) = :year
 							GROUP BY SUBSTR(휴가일, 0, 4), 아이디
 						) LD ON LD.아이디 = E.아이디
 						LEFT JOIN (
 							SELECT
-								아이디, SUM(휴가일수) 추가휴가수
+								아이디, SUM(휴가일수) 리프레시휴가수
 							FROM REWARD
-							WHERE 
-								등록일 BETWEEN :year||'0101' AND :year||'1231' OR 
-								(만료일 BETWEEN :year||'0101' AND :year||'1231' AND 휴가일수 > 사용일수)
+							WHERE 	
+								휴가유형 = '리프레시' AND
+								(
+									등록일 BETWEEN :year||'0101' AND :year||'1231' OR 
+									(만료일 BETWEEN :year||'0101' AND :year||'1231' AND 휴가일수 > 사용일수)
+								)
 							GROUP BY 아이디
-						) R ON E.아이디 = R.아이디,
+						) RF ON E.아이디 = RF.아이디
+						LEFT JOIN (
+							SELECT
+								아이디, SUM(휴가일수) 포상휴가수
+							FROM REWARD
+							WHERE 	
+								휴가유형 = '포상' AND
+								(
+									등록일 BETWEEN :year||'0101' AND :year||'1231' OR 
+									(만료일 BETWEEN :year||'0101' AND :year||'1231' AND 휴가일수 > 사용일수)
+								)
+							GROUP BY 아이디
+						) RR ON E.아이디 = RR.아이디,
 						( SELECT * FROM CODE WHERE 코드구분 = '직위' ) C
 					WHERE 관리자여부 = 'N' AND E.직위코드 = C.코드명
 					ORDER BY 직위코드, 입사일, 이름
