@@ -1,5 +1,5 @@
 module.exports = {
-    sendFail : (res, msg) => {        
+    sendFail : (res, msg) => {
         res.json({
             status: false,
             msg: `[${res.req._parsedOriginalUrl.path}] ${msg}`,
@@ -17,7 +17,7 @@ module.exports = {
         /* 쿼리에 @key를 치환 */
         Object.entries(params).forEach((param) => {
             const key = param[0]
-            let value = param[1]            
+            let value = param[1]
             if (typeof value == "string") {
                 value = `'${value}'`
             }
@@ -34,7 +34,7 @@ module.exports = {
                 matchValue = matchValue.substring(1)
                 paramMap[matchValue] = param[matchValue]
             })
-            returnParams.push(paramMap)	
+            returnParams.push(paramMap)
         })
 
         return returnParams

@@ -9,9 +9,9 @@ router.get('/', (req, res, next) => {
 		if (succ) {
 			try {
 				const sql = `
-                    SELECT * 
-                    FROM REWARD 
-                    WHERE 
+                    SELECT *
+                    FROM REWARD
+                    WHERE
                         아이디 = :id
                     ORDER BY 등록일 DESC
                 `

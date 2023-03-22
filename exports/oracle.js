@@ -11,7 +11,7 @@ const path = require("./config/clientPath")
         "password": "password",
         "connectString": "IP:Port/DATABASE"
     }
-    - path : instantclient 경로    
+    - path : instantclient 경로
 */
 
 db.initOracleClient({ libDir: path })
@@ -22,7 +22,7 @@ db.createPool({
     password: config.password,
     connectString: config.connectString,
     poolMin : 0,
-    poolMax : 10,    
+    poolMax : 10,
 }, (err, conn) => {
     if (err) {
         console.error("createPool() error: " + err.message);
@@ -32,7 +32,7 @@ db.createPool({
 })
 
 module.exports = {
-    connection: (callback) => {        
+    connection: (callback) => {
         pool.getConnection(
             (err, connection) => {
                 if (err) {
@@ -73,7 +73,7 @@ module.exports = {
     },
     /* 다수의 select 쿼리 처리 */
     multiSelect : (conn, hash, callback) => {
-        /* 
+        /*
             hash = {
                 key : {query : "", params : {}}
             }
@@ -124,8 +124,8 @@ module.exports = {
         })
     },
     /* Bulk update */
-    updateBulk: (conn, query, params, callback) => {        
-        /* 
+    updateBulk: (conn, query, params, callback) => {
+        /*
             SQL문이 모두 동일해야 하기 때문에 query replace는 불가
         */
         params = funcs.queryParamsFilter(query, params)

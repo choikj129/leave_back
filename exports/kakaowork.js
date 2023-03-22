@@ -12,14 +12,14 @@ module.exports = {
             .then((res) => {
                 if (!res.data.success) {
                     callback(false, null)
-                }            
+                }
                 callback(true, res.data.user.id)
             })
     },
     conversationOpen : (id, callback) => {
         axios.post("/conversations.open", {
             "user_id" : id
-        }).then((res) => {     
+        }).then((res) => {
             if (!res.data.success) {
                 callback(false, null)
             }

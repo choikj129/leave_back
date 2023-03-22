@@ -30,7 +30,7 @@ server.on('error', onError);
 server.on('listening', onListening);
 
 console.log(`
-     _ _     _     _ _ _ _     _ _ _ _     _ _ _ _  
+     _ _     _     _ _ _ _     _ _ _ _     _ _ _ _
     |   \\   | |   /  _ _  \\   |  _ _  \\   |  _ _ _|
     | |\\ \\  | |  /  /   \\  \\  | |   \\  \\  | |_ _ _
     | | \\ \\ | | |  |     |  | | |    |  | |  _ _ _|

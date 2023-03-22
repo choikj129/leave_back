@@ -33,7 +33,7 @@ router.post('/', (req, res, next) => {
 								position: data.직위,
 								isManager : data.관리자여부 == "Y" ? true : false,
 								isLogin : true,
-								isMobile : /mobile/i.test(userAgent), 
+								isMobile : /mobile/i.test(userAgent),
 							}
 							funcs.sendSuccess(res, req.session.user)
 						}
@@ -61,11 +61,11 @@ router.post('/update', (req, res, next) => {
 				const params = { id: req.body.id, pw: pw }
 				db.update(conn, sql, params, (succ, rows) => {
 					if (!succ) {
-						db.rollback(conn)						
+						db.rollback(conn)
 						funcs.sendFail(res, "DB 업데이트 중 에러")
 					} else {
-						db.commit(conn)						
-						funcs.sendSuccess(res, req.session.user)						
+						db.commit(conn)
+						funcs.sendSuccess(res, req.session.user)
 					}
 					db.close(conn)
 				})

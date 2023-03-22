@@ -13,16 +13,16 @@ router.get('/', (req, res, next) => {
             try {
                 const sql = isAll
                     ? `
-                        SELECT IDX, 이름 || ' ' || 표시내용 || ' ' || 내용 내용, 시작일, 종료일, 휴가일수 
+                        SELECT IDX, 이름 || ' ' || 표시내용 || ' ' || 내용 내용, 시작일, 종료일, 휴가일수
                         FROM LEAVE L, EMP E, ( SELECT * FROM CODE WHERE 코드구분 = '직위' ) C
-                        WHERE L.아이디 = E.아이디 AND E.직위코드 = C.코드명 
+                        WHERE L.아이디 = E.아이디 AND E.직위코드 = C.코드명
                         ORDER BY 내용
                     `
                     : `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE where 아이디 = :id ORDER BY 내용`
 
                 db.select(conn, sql, { id: id }, (succ, rows) => {
                     if (succ) {
-                        funcs.sendSuccess(res, rows)                        
+                        funcs.sendSuccess(res, rows)
                     } else {
                         funcs.sendFail(res, "DB 조회 중 에러")
                     }
@@ -47,9 +47,9 @@ router.post('/', (req, res, next) => {
                 const name = req.body.name
                 const seqSelect = "SELECT NVL(MAX(IDX), 0) SEQ FROM LEAVE"
                 const leaveInsert = `
-                    INSERT INTO LEAVE 
+                    INSERT INTO LEAVE
                     (IDX, 내용, 시작일, 종료일, 휴가일수, 아이디)
-                    VALUES 
+                    VALUES
                     (:seq, :name, :startDate, :endDate, :cnt, :id)
                 `
                 const leaveDelete = `
@@ -58,7 +58,7 @@ router.post('/', (req, res, next) => {
                 const leaveDetailInsert = `
                     INSERT INTO LEAVE_DETAIL
                     (IDX, LEAVE_IDX, 휴가일, 휴가구분, 기타휴가내용)
-                    VALUES 
+                    VALUES
                     (SEQ_LEAVE_DETAIL.NEXTVAL, :1, :2, :3, :4)
                 `
                 const leaveDetailDelete = `
@@ -154,7 +154,7 @@ router.get('/lists', (req, res, next) => {
 		if (succ) {
 			try {
 				/* 관리자는 휴가 중 최소 휴가연도, 기본 직원은 본인 신청 최소 휴가연도 */
-				const dateSql = !req.session.user.isManager 
+				const dateSql = !req.session.user.isManager
 					? `
 						SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
 						FROM LEAVE_DETAIL LD, LEAVE L
@@ -165,7 +165,7 @@ router.get('/lists', (req, res, next) => {
 						FROM LEAVE_DETAIL
 					`
 				const listsSql = `
-					SELECT 
+					SELECT
 						LD.IDX,
 						LD.휴가일 || ' (' || TO_CHAR(TO_DATE(LD.휴가일, 'YYYY-MM-DD'), 'DY','NLS_DATE_LANGUAGE=KOREAN') || ')' 휴가일,
 						LD.휴가구분,
@@ -173,7 +173,7 @@ router.get('/lists', (req, res, next) => {
 						E.아이디,
 						SUBSTR(LD.휴가일, 0, 4) 연도,
 						DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
-					FROM LEAVE_DETAIL LD, LEAVE L, EMP E 
+					FROM LEAVE_DETAIL LD, LEAVE L, EMP E
 					WHERE LD.LEAVE_IDX = L.IDX AND E.아이디 = L.아이디 AND E.아이디 = :id AND SUBSTR(LD.휴가일, 0, 4) = :year
 					ORDER BY 휴가일
 				`
@@ -187,7 +187,7 @@ router.get('/lists', (req, res, next) => {
 						funcs.sendFail(res, "DB 조회 중 에러")
 					}
 					db.close(conn)
-				})				
+				})
 			} catch {
 				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
 				db.close(conn)
@@ -212,21 +212,21 @@ router.get('/cnts', (req, res, next) => {
                         FROM LEAVE L, LEAVE_DETAIL LD
                         WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = :id
                         GROUP BY SUBSTR(휴가일, 0, 4), 아이디
-                    ) A 
+                    ) A
                     LEFT JOIN (
                         SELECT
                             아이디,
-                            SUBSTR(휴가일, 0, 4) 연도,	
-                            SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1)) 사용휴가수         
+                            SUBSTR(휴가일, 0, 4) 연도,
+                            SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1)) 사용휴가수
                         FROM LEAVE L, LEAVE_DETAIL LD
                         WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = :id
                         GROUP BY SUBSTR(휴가일, 0, 4), 아이디
                     ) L ON A.연도 = L.연도
                     LEFT JOIN (
-                        SELECT 
+                        SELECT
                             아이디,
-                            연도,    	
-                            휴가수        
+                            연도,
+                            휴가수
                         FROM LEAVE_CNT
                         WHERE 아이디 = :id
                     ) LC ON A.연도 = LC.연도
@@ -257,8 +257,8 @@ router.post('/cnt/update', (req, res, next) => {
                 const sql = `
                     UPDATE LEAVE_CNT
                     SET 휴가수 = :cnt
-                    WHERE 
-                        아이디 = :id 
+                    WHERE
+                        아이디 = :id
                         AND 연도 = :year
                 `
                 console.log(req.body)

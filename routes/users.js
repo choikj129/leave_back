@@ -12,7 +12,7 @@ router.get('/', (req, res, next) => {
 			try {
 				const sql = `
 					SELECT
-						E.아이디, E.이름, C.코드명 직위코드, C.표시내용 직위, E.입사일, 
+						E.아이디, E.이름, C.코드명 직위코드, C.표시내용 직위, E.입사일,
 						:year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, NVL(LD.기타휴가수, 0) 기타휴가수,
 						NVL(RF.리프레시휴가수, 0) 리프레시휴가수, NVL(LD.사용리프레시휴가수, 0) 사용리프레시휴가수,
 						NVL(RR.포상휴가수, 0) 포상휴가수, NVL(LD.사용포상휴가수, 0) 사용포상휴가수,
@@ -25,9 +25,9 @@ router.get('/', (req, res, next) => {
 							WHERE 연도 = :year
 						) LC ON E.아이디 = LC.아이디
 						LEFT JOIN (
-							SELECT 	
+							SELECT
 								아이디,
-								SUBSTR(휴가일, 0, 4) 연도,	
+								SUBSTR(휴가일, 0, 4) 연도,
 								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, '포상', 0, '리프레시', 0, 1)) 사용휴가수,
 								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '포상', 1, 0)) 사용포상휴가수,
 								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '리프레시', 1, 0)) 사용리프레시휴가수,
@@ -40,10 +40,10 @@ router.get('/', (req, res, next) => {
 							SELECT
 								아이디, SUM(휴가일수) 리프레시휴가수
 							FROM REWARD
-							WHERE 	
+							WHERE
 								휴가유형 = '리프레시' AND
 								(
-									등록일 BETWEEN :year||'0101' AND :year||'1231' OR 
+									등록일 BETWEEN :year||'0101' AND :year||'1231' OR
 									(만료일 BETWEEN :year||'0101' AND :year||'1231' AND 휴가일수 > 사용일수)
 								)
 							GROUP BY 아이디
@@ -52,10 +52,10 @@ router.get('/', (req, res, next) => {
 							SELECT
 								아이디, SUM(휴가일수) 포상휴가수
 							FROM REWARD
-							WHERE 	
+							WHERE
 								휴가유형 = '포상' AND
 								(
-									등록일 BETWEEN :year||'0101' AND :year||'1231' OR 
+									등록일 BETWEEN :year||'0101' AND :year||'1231' OR
 									(만료일 BETWEEN :year||'0101' AND :year||'1231' AND 휴가일수 > 사용일수)
 								)
 							GROUP BY 아이디
@@ -98,7 +98,7 @@ router.post('/update', (req, res, next) => {
 						db.rollback(conn)
 					}
 					db.close(conn)
-				})		
+				})
 			} catch {
 				funcs.sendFail(res, "DB 업데이트 중 에러 (catch)")
 				db.rollback(conn)
@@ -115,11 +115,11 @@ router.get('/history', (req, res, next) => {
 		if (succ) {
 			try {
 				const sql = `
-					SELECT A.* 
+					SELECT A.*
 					FROM (
-						SELECT H.IDX, E.이름, E.아이디, H.내용, TO_CHAR(H.등록일자, 'YYYY-MM-DD HH24:MI:SS') 등록일자 
-						FROM HISTORY H, EMP E 
-						WHERE H.아이디 = E.아이디 
+						SELECT H.IDX, E.이름, E.아이디, H.내용, TO_CHAR(H.등록일자, 'YYYY-MM-DD HH24:MI:SS') 등록일자
+						FROM HISTORY H, EMP E
+						WHERE H.아이디 = E.아이디
 						ORDER BY 등록일자 DESC, 내용 DESC
 					) A
 					WHERE ROWNUM < 31
@@ -166,7 +166,7 @@ router.post('/insert', (req, res, next) => {
 						funcs.sendFail(res, "DB EMP 삽입 중 에러")
 						db.rollback(conn)
 					}
-					db.close(conn)						
+					db.close(conn)
 				})
 			} catch {
 				funcs.sendFail(res, "DB 삽입 중 에러 (catch)")
