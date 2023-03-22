@@ -65,7 +65,7 @@ router.get('/holiday', (req, res, next) => {
 			try {
 				/* 관리자는 휴가 중 최소 휴가연도, 기본 직원은 본인 신청 최소 휴가연도 */
 				const holdaySelect = `
-					SELECT 명칭, 휴일여부, TO_CHAR(날짜,'YYYY') 년,TO_CHAR(날짜,'MM') 월,TO_CHAR(날짜,'DD') 일 
+					SELECT 명칭, 휴일여부, TO_CHAR(날짜,'YYYY') 년,TO_CHAR(날짜,'MM') 월,TO_CHAR(날짜,'DD') 일
 					FROM HOLIDAY
 					WHERE 휴일여부 = 'Y'
 				`;
