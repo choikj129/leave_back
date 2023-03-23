@@ -13,10 +13,15 @@ router.get("/", (req, res, next) => {
 				const sql = `
 					SELECT
 						E.아이디, E.이름, E.직위코드, E.직위, E.입사일,
-						:year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, NVL(LD.기타휴가수, 0) 기타휴가수,
-						NVL(RF.리프레시휴가수, 0) 리프레시휴가수, NVL(LD.사용리프레시휴가수, 0) 사용리프레시휴가수,
-						NVL(RR.포상휴가수, 0) 포상휴가수, NVL(LD.사용포상휴가수, 0) 사용포상휴가수,
-						NVL(RF.리프레시휴가수 + RR.포상휴가수, 0) 추가휴가수, NVL(LD.사용포상휴가수 + LD.사용리프레시휴가수, 0) 사용추가휴가수,
+						:year 연도, LC.휴가수, 
+						NVL(LD.사용휴가수, 0) 사용휴가수,
+						NVL(LD.기타휴가수, 0) 기타휴가수,
+						NVL(RF.리프레시휴가수, 0) 리프레시휴가수,
+						NVL(LD.사용리프레시휴가수, 0) 사용리프레시휴가수,
+						NVL(RR.포상휴가수, 0) 포상휴가수,
+						NVL(LD.사용포상휴가수, 0) 사용포상휴가수,
+						NVL(RF.리프레시휴가수 + RR.포상휴가수, 0) 추가휴가수, 
+						NVL(LD.사용포상휴가수 + LD.사용리프레시휴가수, 0) 사용추가휴가수,
 						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) + 1 || '년차' 입사년차
 					FROM EMP_POS E
 						LEFT JOIN (
@@ -33,7 +38,9 @@ router.get("/", (req, res, next) => {
 								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '리프레시', 1, 0)) 사용리프레시휴가수,
 								SUM(DECODE(SUBSTR(휴가구분, 0, 2), '기타', 1, 0)) 기타휴가수
 							FROM LEAVE L, LEAVE_DETAIL LD
-							WHERE L.IDX = LD.LEAVE_IDX AND SUBSTR(휴가일, 0, 4) = :year
+							WHERE 
+								L.IDX = LD.LEAVE_IDX
+								AND SUBSTR(휴가일, 0, 4) = :year
 							GROUP BY SUBSTR(휴가일, 0, 4), 아이디
 						) LD ON LD.아이디 = E.아이디
 						LEFT JOIN (

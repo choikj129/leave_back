@@ -12,8 +12,8 @@ router.get("/", (req, res, next) => {
                     SELECT R.*, E.이름, E.직위
                     FROM REWARD R, EMP_POS E
                     WHERE
-                        R.아이디 = E.아이디 AND
-                        E.아이디 = :id
+                        R.아이디 = E.아이디
+                        AND E.아이디 = :id
                     ORDER BY 등록일 DESC
                 `
 				db.select(conn, sql, req.query, (succ, rows) =>{
@@ -108,5 +108,49 @@ router.delete("/", (req, res, next) => {
 	})
 })
 
-
+/* 직원별 사용가능 포상 / 리프레시 휴가 조회 */
+router.get("/user", (req, res, next) => {
+	db.connection((succ, conn) => {
+		if (succ) {
+			try {
+				const rewardSql = `
+                    SELECT * 
+                    FROM REWARD 
+                    WHERE 
+                        TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN 등록일 AND 만료일 
+                        AND 아이디 = :id
+                        AND 휴가일수 > 사용일수
+                        AND 휴가유형 = '포상'
+                    ORDER BY 등록일, IDX
+                `
+				const refreshSql = `
+                    SELECT * 
+                    FROM REWARD 
+                    WHERE 
+                        TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN 등록일 AND 만료일 
+                        AND 아이디 = :id
+                        AND 휴가일수 > 사용일수
+                        AND 휴가유형 = '리프레시'
+                    ORDER BY 등록일, IDX
+                `
+				db.multiSelect(conn, {
+                    reward : { query : rewardSql, params : { id : req.query.id } },
+                    refresh : { query : refreshSql, params : { id : req.query.id } },
+                }, (succ, rows) =>{
+                    if (succ) {
+                        funcs.sendSuccess(res, rows)
+                    } else {
+                        funcs.sendFail(res, "DB 조회 중 에러")
+                    }
+                    db.close(conn)
+                })
+			} catch {
+                funcs.sendFail(res, "DB 조회 중 에러 (catch)")
+				db.close(conn)
+			}
+		} else {
+			funcs.sendFail(res, "DB 연결 실패")
+		}
+	})
+})
 module.exports = router

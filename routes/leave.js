@@ -175,7 +175,11 @@ router.get("/lists", (req, res, next) => {
 						SUBSTR(LD.휴가일, 0, 4) 연도,
 						DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
 					FROM LEAVE_DETAIL LD, LEAVE L, EMP E
-					WHERE LD.LEAVE_IDX = L.IDX AND E.아이디 = L.아이디 AND E.아이디 = :id AND SUBSTR(LD.휴가일, 0, 4) = :year
+					WHERE 
+                        LD.LEAVE_IDX = L.IDX
+                        AND E.아이디 = L.아이디
+                        AND E.아이디 = :id 
+                        AND SUBSTR(LD.휴가일, 0, 4) = :year
 					ORDER BY 휴가일
 				`
 				db.multiSelect(conn, {
@@ -211,7 +215,9 @@ router.get("/cnts", (req, res, next) => {
                         UNION ALL
                         SELECT SUBSTR(휴가일, 0, 4) 연도, 아이디
                         FROM LEAVE L, LEAVE_DETAIL LD
-                        WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = :id
+                        WHERE 
+                            L.IDX = LD.LEAVE_IDX 
+                            AND L.아이디 = :id
                         GROUP BY SUBSTR(휴가일, 0, 4), 아이디
                     ) A
                     LEFT JOIN (
@@ -220,7 +226,9 @@ router.get("/cnts", (req, res, next) => {
                             SUBSTR(휴가일, 0, 4) 연도,
                             SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1)) 사용휴가수
                         FROM LEAVE L, LEAVE_DETAIL LD
-                        WHERE L.IDX = LD.LEAVE_IDX AND L.아이디 = :id
+                        WHERE 
+                            L.IDX = LD.LEAVE_IDX 
+                            AND L.아이디 = :id
                         GROUP BY SUBSTR(휴가일, 0, 4), 아이디
                     ) L ON A.연도 = L.연도
                     LEFT JOIN (
