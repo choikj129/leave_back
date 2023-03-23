@@ -1,12 +1,12 @@
-let express = require('express')
+let express = require("express")
 let router = express.Router()
-let crypto = require("crypto");
+let crypto = require("crypto")
 let db = require("../exports/oracle")
-let funcs = require("../exports/functions");
-let salt = require("../exports/config/crypto");
+let funcs = require("../exports/functions")
+let salt = require("../exports/config/crypto")
 
 
-router.post('/', (req, res, next) => {
+router.post("/", (req, res, next) => {
 	const userAgent = req.get('User-Agent')
 	console.log(`User-Agent : ${userAgent}`)
 	db.connection((succ, conn) => {
@@ -49,10 +49,10 @@ router.post('/', (req, res, next) => {
 			funcs.sendFail(res, "DB 연결 실패")
 		}
 	})
-});
+})
 
 /* 비밀번호 변경 */
-router.patch('/', (req, res, next) => {
+router.patch("/", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -79,10 +79,10 @@ router.patch('/', (req, res, next) => {
 			funcs.sendFail(res, "DB 연결 실패")
 		}
 	})
-});
+})
 
-// router.post('/test', (req, res, next) => {
+// router.post("/test", (req, res, next) => {
 // 	hash = crypto.pbkdf2Sync(req.body.pw, salt, 1, 64, "SHA512").toString("base64")
 // 	funcs.sendSuccess(res)
-// });
-module.exports = router;
+// })
+module.exports = router

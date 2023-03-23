@@ -1,23 +1,22 @@
-let express = require("express");
-let router = express.Router();
-let fs = require("fs");
-let path = require("path");
-let db = require("../exports/oracle");
-let funcs = require("../exports/functions");
+let express = require("express")
+let router = express.Router()
+let fs = require("fs")
+let path = require("path")
+let db = require("../exports/oracle")
+let funcs = require("../exports/functions")
 
 router.get("/logout", (req, res, next) => {
 	req.session.destroy((err) => {
 		if (err) {
-			console.log(err);
+			console.log(err)
 			funcs.sendFail(res, "Logout session destroy Error")
 		} else {
 			funcs.sendSuccess(res)
 		}
 	})
-});
+})
 
 router.get("/download", (req, res, next) => {
-	console.log(`${__dirname}`)
 	const filePath = `${__dirname}/../public/files/`
 	let fileName = "어다인_휴가관리_사용자_매뉴얼.pdf"
 	if (req.session.user.isManager) {
@@ -30,7 +29,7 @@ router.get("/download", (req, res, next) => {
 			console.log(err)
 		}
 	})
-});
+})
 
 router.get("/code", (req, res, next) => {
 	db.connection((succ, conn) => {
@@ -54,11 +53,11 @@ router.get("/code", (req, res, next) => {
 			funcs.sendFail(res, "DB 연결 실패")
 		}
 	})
-});
+})
 
 /* 공휴일 목록 불러오기 */
 /* 공휴일 리스트 */
-router.get('/holiday', (req, res, next) => {
+router.get("/holiday", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -67,7 +66,7 @@ router.get('/holiday', (req, res, next) => {
 					SELECT 명칭, 휴일여부, TO_CHAR(날짜,'YYYY') 년,TO_CHAR(날짜,'MM') 월,TO_CHAR(날짜,'DD') 일
 					FROM HOLIDAY
 					WHERE 휴일여부 = 'Y'
-				`;
+				`
 				db.select(conn,holdaySelect,"", (succ, rows) => {
 					if (succ) {
 						funcs.sendSuccess(res, rows)
@@ -84,6 +83,6 @@ router.get('/holiday', (req, res, next) => {
 			funcs.sendFail(res, "DB 연결 실패")
 		}
 	})
-});
+})
 
-module.exports = router;
+module.exports = router

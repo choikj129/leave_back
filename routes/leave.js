@@ -1,11 +1,11 @@
-let express = require('express');
+let express = require("express")
 let router = express.Router()
-let db = require("../exports/oracle");
-let funcs = require("../exports/functions");
-let kakaowork = require("../exports/kakaowork");
+let db = require("../exports/oracle")
+let funcs = require("../exports/functions")
+let kakaowork = require("../exports/kakaowork")
 
 /* 휴가 일정 페이지 접속 (이벤트 목록) */
-router.get('/', (req, res, next) => {
+router.get("/", (req, res, next) => {
     const id = req.query.id
     const isAll = JSON.parse(req.query.isAll)
     db.connection((succ, conn) => {
@@ -38,7 +38,7 @@ router.get('/', (req, res, next) => {
     })
 });
 /* 휴가 신청 */
-router.patch('/', (req, res, next) => {
+router.patch("/", (req, res, next) => {
     db.connection((succ, conn) => {
         if (succ) {
             try {
@@ -147,9 +147,10 @@ router.patch('/', (req, res, next) => {
             funcs.sendFail(res, "DB 연결 실패")
         }
     })
-});
+})
+
 /* 휴가 리스트 */
-router.get('/lists', (req, res, next) => {
+router.get("/lists", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -198,7 +199,7 @@ router.get('/lists', (req, res, next) => {
 	})
 })
 /* 사이트 접속 (휴가 상세 목록) */
-router.get('/cnts', (req, res, next) => {
+router.get("/cnts", (req, res, next) => {
     const id = req.query.id
     db.connection((succ, conn) => {
         if (succ) {
@@ -247,10 +248,10 @@ router.get('/cnts', (req, res, next) => {
             funcs.sendFail(res, "DB 연결 실패")
         }
     })
-});
+})
 
 /* 사이트 접속 (휴가 상세 목록) */
-router.patch('/cnt', (req, res, next) => {
+router.patch("/cnt", (req, res, next) => {
     db.connection((succ, conn) => {
         if (succ) {
             try {
@@ -281,6 +282,6 @@ router.patch('/cnt', (req, res, next) => {
             funcs.sendFail(res, "DB 연결 실패")
         }
     })
-});
+})
 
-module.exports = router;
+module.exports = router

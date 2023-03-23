@@ -1,10 +1,10 @@
-let express = require('express');
+let express = require("express")
 let router = express.Router()
-let db = require("../exports/oracle");
-let funcs = require("../exports/functions");
+let db = require("../exports/oracle")
+let funcs = require("../exports/functions")
 
 /* 포상 / 리프레시 휴가 조회 */
-router.get('/', (req, res, next) => {
+router.get("/", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -35,7 +35,7 @@ router.get('/', (req, res, next) => {
 })
 
 /* 포상 / 리프레시 휴가 등록 */
-router.put('/', (req, res, next) => {
+router.put("/", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -73,7 +73,7 @@ router.put('/', (req, res, next) => {
 })
 
 /* 포상 / 리프레시 휴가 삭제 */
-router.delete('/', (req, res, next) => {
+router.delete("/", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -109,4 +109,4 @@ router.delete('/', (req, res, next) => {
 })
 
 
-module.exports = router;
+module.exports = router

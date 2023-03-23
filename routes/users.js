@@ -1,12 +1,12 @@
-var express = require('express');
-var router = express.Router();
-let crypto = require("crypto");
-let db = require("../exports/oracle");
-let funcs = require("../exports/functions");
-let salt = require("../exports/config/crypto");
+var express = require("express")
+var router = express.Router()
+let crypto = require("crypto")
+let db = require("../exports/oracle")
+let funcs = require("../exports/functions")
+let salt = require("../exports/config/crypto")
 
 /* 사이트 관리자 접속 (직원 정보) */
-router.get('/', (req, res, next) => {
+router.get("/", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -80,8 +80,9 @@ router.get('/', (req, res, next) => {
 		}
 	})
 });
+
 /* 직원 휴가 수정 */
-router.patch('/', (req, res, next) => {
+router.patch("/", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -109,7 +110,7 @@ router.patch('/', (req, res, next) => {
 	})
 });
 /* 휴가 신청 기록 */
-router.get('/history', (req, res, next) => {
+router.get("/history", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -142,7 +143,7 @@ router.get('/history', (req, res, next) => {
 })
 
 /* 직원 추가 */
-router.put('/', (req, res, next) => {
+router.put("/", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -180,8 +181,9 @@ router.put('/', (req, res, next) => {
 		}
 	})
 });
+
 /* 직원 삭제 */
-router.delete('/', (req, res, next) => {
+router.delete("/", (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -206,4 +208,5 @@ router.delete('/', (req, res, next) => {
 		}
 	})
 })
-module.exports = router;
+
+module.exports = router

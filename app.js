@@ -1,33 +1,33 @@
-let createError = require('http-errors');
-let express = require('express');
-let session = require('express-session');
+let createError = require("http-errors")
+let express = require("express")
+let session = require("express-session")
 let moment = require("moment")
-let path = require('path');
-let cookieParser = require('cookie-parser');
-let morgan = require('morgan');
+let path = require("path")
+let cookieParser = require("cookie-parser")
+let morgan = require("morgan")
 let interceptor = require("./exports/interceptor")
 
 
-let indexRouter = require('./routes/index');
-let loginRouter = require('./routes/login');
-let leaveRouter = require('./routes/leave');
-let rewardRouter = require('./routes/reward');
-let usersRouter = require('./routes/users');
-let cronRouter = require('./routes/cron');
-let app = express();
+let indexRouter = require("./routes/index")
+let loginRouter = require("./routes/login")
+let leaveRouter = require("./routes/leave")
+let rewardRouter = require("./routes/reward")
+let usersRouter = require("./routes/users")
+let cronRouter = require("./routes/cron")
+let app = express()
 
 // view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
+app.set("views", path.join(__dirname, "views"))
+app.set("view engine", "ejs")
 
 morgan.format("dateTime", (req, res) => {
   return moment().format("YYYY-MM-DD HH:mm:ss")
 })
-app.use(morgan('[:dateTime] :method :url :status'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(morgan("[:dateTime] :method :url :status"))
+app.use(express.json())
+app.use(express.urlencoded({ extended: false }))
+app.use(cookieParser())
+app.use(express.static(path.join(__dirname, "public")))
 
 app.use(
   session({
@@ -47,27 +47,27 @@ app.use((req, res, next) => {
   }
 })
 
-app.use('/', indexRouter);
-app.use('/login', loginRouter);
-app.use('/leave', leaveRouter);
-app.use('/reward', rewardRouter);
-app.use('/users', usersRouter);
-app.use('/cron', cronRouter);
+app.use("/", indexRouter)
+app.use("/login", loginRouter)
+app.use("/leave", leaveRouter)
+app.use("/reward", rewardRouter)
+app.use("/users", usersRouter)
+app.use("/cron", cronRouter)
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
-  next(createError(404));
-});
+  next(createError(404))
+})
 
 // error handler
 app.use((err, req, res, next) => {
   // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+  res.locals.message = err.message
+  res.locals.error = req.app.get("env") === "development" ? err : {}
   
   // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+  res.status(err.status || 500)
+  res.render("error")
+})
 
-module.exports = app;
+module.exports = app

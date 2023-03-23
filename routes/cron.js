@@ -1,13 +1,13 @@
-let express = require('express');
+let express = require("express")
 let router = express.Router()
-let db = require("../exports/oracle");
-let funcs = require("../exports/functions");
+let db = require("../exports/oracle")
+let funcs = require("../exports/functions")
 let holidayKey = require("../exports/config/apiKey").holiday
-let today = new Date();
-const axios = require("axios");
+let today = new Date()
+const axios = require("axios")
 
 /* 공휴일 목록 불러오기 */
-router.get('/holiday', (req, res, next) => {
+router.get("/holiday", (req, res, next) => {
     const thisYear = req.query.year
     let url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo';
     let numOfRows = '100';
