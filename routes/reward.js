@@ -35,7 +35,7 @@ router.get('/', (req, res, next) => {
 })
 
 /* 포상 / 리프레시 휴가 등록 */
-router.post('/insert', (req, res, next) => {
+router.put('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -73,7 +73,7 @@ router.post('/insert', (req, res, next) => {
 })
 
 /* 포상 / 리프레시 휴가 삭제 */
-router.post('/delete', (req, res, next) => {
+router.delete('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -89,12 +89,7 @@ router.post('/delete', (req, res, next) => {
                 `
 				db.update(conn, sql, req.body, (succ, rows) =>{
                     if (succ) {
-                        if (rows == 0) {
-                            funcs.sendFail(res, "이미 사용한 휴가는 삭제할 수 없습니다.")
-                        }
-                        else {
-                            funcs.sendSuccess(res, rows)
-                        }
+                        rows == 0 ? funcs.sendFail(res, "이미 사용한 휴가는 삭제할 수 없습니다.") : funcs.sendSuccess(res, rows)
                         db.commit(conn)
                     } else {
                         funcs.sendFail(res, "DB 업데이트 중 에러")

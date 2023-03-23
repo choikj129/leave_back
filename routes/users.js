@@ -81,7 +81,7 @@ router.get('/', (req, res, next) => {
 	})
 });
 /* 직원 휴가 수정 */
-router.post('/update', (req, res, next) => {
+router.patch('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
@@ -142,24 +142,27 @@ router.get('/history', (req, res, next) => {
 })
 
 /* 직원 추가 */
-router.post('/insert', (req, res, next) => {
+router.put('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
-			pw = crypto.pbkdf2Sync("odinue2014", salt, 1, 64, "SHA512").toString("base64")
 			try {
 				const sql = `
-					INSERT INTO EMP (아이디, 비밀번호, 이름, 직위코드, 입사일)
-					VALUES (:id, :pw, :name, :position, :date)
+					MERGE INTO EMP USING DUAL
+						ON (
+							아이디 = :id
+						)
+					WHEN NOT MATCHED THEN
+						INSERT (아이디, 이름, 직위코드, 입사일)
+						VALUES (:id, :name, :position, :date)					
 				`
 				db.update(conn, sql, {
 					id : req.body.id,
-					pw : pw,
 					name : req.body.name,
 					position : req.body.position,
 					date : req.body.date,
 				}, (succ, rows) => {
 					if (succ) {
-						funcs.sendSuccess(res, rows)
+						rows == 0 ? funcs.sendFail(res, "중복된 아이디입니다.") : funcs.sendSuccess(res, rows)
 						db.commit(conn)
 					} else {
 						funcs.sendFail(res, "DB EMP 삽입 중 에러")
@@ -178,12 +181,12 @@ router.post('/insert', (req, res, next) => {
 	})
 });
 /* 직원 삭제 */
-router.get('/delete', (req, res, next) => {
+router.delete('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {
 				const sql = `DELETE FROM EMP WHERE 아이디 = :id`
-				db.select(conn, sql, {id : req.query.id}, (succ, rows) => {
+				db.select(conn, sql, {id : req.body.id}, (succ, rows) => {
 					if (succ) {
 						funcs.sendSuccess(res, rows)
 						db.commit(conn)

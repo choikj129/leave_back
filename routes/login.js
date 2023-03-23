@@ -5,7 +5,6 @@ let db = require("../exports/oracle")
 let funcs = require("../exports/functions");
 let salt = require("../exports/config/crypto");
 
-/* GET home page. */
 
 router.post('/', (req, res, next) => {
 	const userAgent = req.get('User-Agent')
@@ -52,7 +51,8 @@ router.post('/', (req, res, next) => {
 	})
 });
 
-router.post('/update', (req, res, next) => {
+/* 비밀번호 변경 */
+router.patch('/', (req, res, next) => {
 	db.connection((succ, conn) => {
 		if (succ) {
 			try {

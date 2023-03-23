@@ -38,7 +38,7 @@ router.get('/', (req, res, next) => {
     })
 });
 /* 휴가 신청 */
-router.post('/', (req, res, next) => {
+router.patch('/', (req, res, next) => {
     db.connection((succ, conn) => {
         if (succ) {
             try {
@@ -250,7 +250,7 @@ router.get('/cnts', (req, res, next) => {
 });
 
 /* 사이트 접속 (휴가 상세 목록) */
-router.post('/cnt/update', (req, res, next) => {
+router.patch('/cnt', (req, res, next) => {
     db.connection((succ, conn) => {
         if (succ) {
             try {
@@ -261,7 +261,6 @@ router.post('/cnt/update', (req, res, next) => {
                         아이디 = :id
                         AND 연도 = :year
                 `
-                console.log(req.body)
                 db.select(conn, sql, req.body, (succ, rows) => {
                         if (succ) {
                             funcs.sendSuccess(res, rows)

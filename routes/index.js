@@ -5,7 +5,6 @@ let path = require("path");
 let db = require("../exports/oracle");
 let funcs = require("../exports/functions");
 
-/* GET home page. */
 router.get("/logout", (req, res, next) => {
 	req.session.destroy((err) => {
 		if (err) {
