@@ -12,13 +12,13 @@ router.get('/', (req, res, next) => {
 			try {
 				const sql = `
 					SELECT
-						E.아이디, E.이름, C.코드명 직위코드, C.표시내용 직위, E.입사일,
+						E.아이디, E.이름, E.직위코드, E.직위, E.입사일,
 						:year 연도, LC.휴가수, NVL(LD.사용휴가수, 0) 사용휴가수, NVL(LD.기타휴가수, 0) 기타휴가수,
 						NVL(RF.리프레시휴가수, 0) 리프레시휴가수, NVL(LD.사용리프레시휴가수, 0) 사용리프레시휴가수,
 						NVL(RR.포상휴가수, 0) 포상휴가수, NVL(LD.사용포상휴가수, 0) 사용포상휴가수,
 						NVL(RF.리프레시휴가수 + RR.포상휴가수, 0) 추가휴가수, NVL(LD.사용포상휴가수 + LD.사용리프레시휴가수, 0) 사용추가휴가수,
 						TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(입사일, 'YYYYMMDD'))/12) + 1 || '년차' 입사년차
-					FROM EMP E
+					FROM EMP_POS E
 						LEFT JOIN (
 							SELECT 아이디, 연도, 휴가수
 							FROM LEAVE_CNT
@@ -59,9 +59,8 @@ router.get('/', (req, res, next) => {
 									(만료일 BETWEEN :year||'0101' AND :year||'1231' AND 휴가일수 > 사용일수)
 								)
 							GROUP BY 아이디
-						) RR ON E.아이디 = RR.아이디,
-						( SELECT * FROM CODE WHERE 코드구분 = '직위' ) C
-					WHERE 관리자여부 = 'N' AND E.직위코드 = C.코드명
+						) RR ON E.아이디 = RR.아이디
+					WHERE 관리자여부 = 'N'
 					ORDER BY 직위코드, 입사일, 이름
 				`
 				db.select(conn, sql, {year : req.query.year}, (succ, rows) => {

@@ -9,10 +9,11 @@ router.get('/', (req, res, next) => {
 		if (succ) {
 			try {
 				const sql = `
-                    SELECT *
-                    FROM REWARD
+                    SELECT R.*, E.이름, E.직위
+                    FROM REWARD R, EMP_POS E
                     WHERE
-                        아이디 = :id
+                        R.아이디 = E.아이디 AND
+                        E.아이디 = :id
                     ORDER BY 등록일 DESC
                 `
 				db.select(conn, sql, req.query, (succ, rows) =>{
@@ -53,6 +54,47 @@ router.post('/insert', (req, res, next) => {
                 }, (succ, rows) =>{
                     if (succ) {
                         funcs.sendSuccess(res, rows)
+                        db.commit(conn)
+                    } else {
+                        funcs.sendFail(res, "DB 업데이트 중 에러")
+                        db.rollback(conn)
+                    }
+                    db.close(conn)
+                })
+			} catch {
+                funcs.sendFail(res, "DB 업데이트 중 에러 (catch)")
+                db.rollback(conn)
+				db.close(conn)
+			}
+		} else {
+			funcs.sendFail(res, "DB 연결 실패")
+		}
+	})
+})
+
+/* 포상 / 리프레시 휴가 삭제 */
+router.post('/delete', (req, res, next) => {
+	db.connection((succ, conn) => {
+		if (succ) {
+			try {
+				const sql = `
+                    MERGE INTO REWARD R USING DUAL
+                        ON (
+                            R.사용일수 = 0 AND 
+                            R.IDX = :idx
+                        )
+                    WHEN MATCHED THEN
+                        UPDATE SET R.휴가일수 = -1 WHERE IDX = :idx
+                        DELETE WHERE IDX = :idx
+                `
+				db.update(conn, sql, req.body, (succ, rows) =>{
+                    if (succ) {
+                        if (rows == 0) {
+                            funcs.sendFail(res, "이미 사용한 휴가는 삭제할 수 없습니다.")
+                        }
+                        else {
+                            funcs.sendSuccess(res, rows)
+                        }
                         db.commit(conn)
                     } else {
                         funcs.sendFail(res, "DB 업데이트 중 에러")

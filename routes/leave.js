@@ -13,9 +13,9 @@ router.get('/', (req, res, next) => {
             try {
                 const sql = isAll
                     ? `
-                        SELECT IDX, 이름 || ' ' || 표시내용 || ' ' || 내용 내용, 시작일, 종료일, 휴가일수
-                        FROM LEAVE L, EMP E, ( SELECT * FROM CODE WHERE 코드구분 = '직위' ) C
-                        WHERE L.아이디 = E.아이디 AND E.직위코드 = C.코드명
+                        SELECT IDX, 이름 || ' ' || 직위 || ' ' || 내용 내용, 시작일, 종료일, 휴가일수
+                        FROM LEAVE L, EMP_POS E
+                        WHERE L.아이디 = E.아이디
                         ORDER BY 내용
                     `
                     : `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE where 아이디 = :id ORDER BY 내용`
