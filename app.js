@@ -14,6 +14,7 @@ let leaveRouter = require("./routes/leave")
 let rewardRouter = require("./routes/reward")
 let usersRouter = require("./routes/users")
 let cronRouter = require("./routes/cron")
+let apiRouter = require("./routes/api")
 let app = express()
 
 // view engine setup
@@ -53,6 +54,7 @@ app.use("/leave", leaveRouter)
 app.use("/reward", rewardRouter)
 app.use("/users", usersRouter)
 app.use("/cron", cronRouter)
+app.use("/api", apiRouter)
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
