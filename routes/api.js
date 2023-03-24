@@ -1,9 +1,8 @@
 var express = require('express');
 var router = express.Router();
 
-let db = require("../exports/oracle");
-let funcs = require("../exports/functions");
-let salt = require("../exports/config/crypto");
+const db = require("../exports/oracle");
+const funcs = require("../exports/functions");
 
 //코드에서 키 불러오기
 router.get("/code", (req, res, next) => {
@@ -18,16 +17,17 @@ router.get("/code", (req, res, next) => {
 					} else {
 						funcs.sendFail(res, "DB 조회 중 에러")
 					}
-					db.close(conn)
 				})
 			} catch {
 				funcs.sendFail(res, "DB 조회 중 에러 (catch)")
+			} finally {
 				db.close(conn)
 			}
 		} else {
 			funcs.sendFail(res, "DB 연결 실패")
 		}
 	})
+	dbfuncs.getCode()
 });
 
 
