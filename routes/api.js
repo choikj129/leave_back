@@ -27,7 +27,6 @@ router.get("/code", (req, res, next) => {
 			funcs.sendFail(res, "DB 연결 실패")
 		}
 	})
-	dbfuncs.getCode()
 });
 
 
