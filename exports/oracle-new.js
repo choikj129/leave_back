@@ -1,0 +1,173 @@
+let db = require("oracledb")
+let config = require("./config/db_connect")
+let funcs = require("./functions");
+const path = require("./config/clientPath")
+/*
+    #config format
+
+    - config
+    module.exports = {
+        "user": "username",
+        "password": "password",
+        "connectString": "IP:Port/DATABASE"
+    }
+    - path : instantclient 경로
+*/
+
+db.initOracleClient({ libDir: path })
+db.outFormat = db.OUT_FORMAT_OBJECT
+let pool = null
+db.createPool({
+    user: config.user,
+    password: config.password,
+    connectString: config.connectString,
+    poolMin : 0,
+    poolMax : 10,
+}, (err, conn) => {
+    if (err) {
+        console.error("createPool() error: " + err.message);
+        return;
+    }
+    pool =  conn
+})
+
+module.exports = {
+	connection: async () => {
+        return await pool.getConnection()
+			.then((conn)=>{
+				return {succ:true, conn:conn}
+			})
+    },
+    close: async (conn) => {
+        try {
+            console.log("DB Close")
+            await conn.close()
+        } catch {
+            console.log("invalid connection")
+        }
+    },
+	execute: async (conn, query, params) => {
+        query = funcs.replaceQuery(query, params)
+		const result = await conn.execute(query, {}).then( (result) => {return  result})
+		return await result
+    },
+    select: async (conn, query, params) => {
+        query = funcs.replaceQuery(query, params)
+		const result = await conn.execute(query, {}).then( (result) => {return  result})
+		return await result
+    },
+    /* 다수의 select 쿼리 처리 */
+    multiSelect : (conn, hash, callback) => {
+        /*
+            hash = {
+                key : {query : "", params : {}}
+            }
+        */
+        keys = Object.keys(hash)
+        if (keys.length > 0) {
+            returnData = {}
+            keys.forEach((key, i) => {
+                hash[key].query = funcs.replaceQuery(hash[key].query, hash[key].params)
+                conn.execute(hash[key].query, {}, (err, result) => {
+                    if (err) {
+                        console.log("DB multi select error")
+                        console.log("==========================================================")
+                        console.log(hash[key].query)
+                        console.log("==========================================================")
+                        console.error(err)
+                        callback(false)
+                        return false;
+                    } else {
+                        returnData[key] = result.rows
+                        if (i == keys.length -1) {
+                            console.log("DB multi select success")
+                            callback(true, returnData)
+                        }
+                    }
+                })
+            })
+        } else {
+            console.log("No hash keys [multi select]")
+            callback(true, 0)
+        }
+        
+    },
+    update: (conn, query, params, callback) => {
+        query = funcs.replaceQuery(query, params)
+        conn.execute(query, {}, (err, result) => {
+            if (err) {
+                console.log("DB update error")
+                console.log("==========================================================")
+                console.log(query)
+                console.log("==========================================================")
+                console.error(err)
+                callback(false)
+            } else {
+                console.log("DB update success")
+                callback(true, result.rowsAffected)
+            }
+        })
+    },
+    /* Bulk update */
+    updateBulk: (conn, query, params, callback) => {
+        /*
+            SQL문이 모두 동일해야 하기 때문에 query replace는 불가
+        */
+        params = funcs.queryParamsFilter(query, params)
+        if (params.length > 0) {
+            conn.executeMany(query, params, (err, result) => {
+                if (err) {
+                    console.log("DB update bulk error")
+                    console.log("==========================================================")
+                    console.log(query)
+                    console.log("==========================================================")
+                    console.error(err)
+                    callback(false)
+                } else {
+                    console.log("DB update bulk success")
+                    callback(true, result.rowsAffected)
+                }
+            })
+        }else {
+            console.log("No params data [update bulk]")
+            callback(true, 0)
+        }
+    },
+    /* 다수의 Bulk update */
+    multiUpdateBulk : (conn, hash, callback) => {
+        keys = Object.keys(hash)
+        if (keys.length > 0) {
+            returnData = {}
+            keys.forEach((key, i) => {
+                conn.executeMany(hash[key].query, hash[key].params, (err, result) => {
+                    if (err) {
+                        console.log("DB multi update bulk error")
+                        console.log("==========================================================")
+                        console.log(hash[key].query)
+                        console.log("==========================================================")
+                        console.error(err)
+                        callback(false)
+                        return false;
+                    } else {
+                        returnData[key] = result.rowsAffected
+                        if (i == keys.length -1) {
+                            console.log("DB multi update bulk success")
+                            callback(true, returnData)
+                        }
+                    }
+                })
+            })
+        } else {
+            console.log("No params data [multi update bulk]")
+            callback(true, 0)
+        }
+    },
+    commit: (conn) => {
+        console.log("DB commit")
+        conn.commit()
+    },
+    rollback: (conn) => {
+        console.log("DB rollback")
+        conn.rollback()
+    },
+}
