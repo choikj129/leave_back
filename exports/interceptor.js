@@ -9,14 +9,14 @@ module.exports = {
                 isManager: false,
                 isLogin : true,
             }
+            req.session.user = {
+                id: 'odinue',
+                name: '어다인',
+                position : null,
+                isManager: true,
+                isLogin : true,
+            }
         */
-        req.session.user = {
-            id: 'odinue',
-            name: '어다인',
-            position : null,
-            isManager: true,
-            isLogin : true,
-        }
         if (!req.session.user) {
             return false
         }
