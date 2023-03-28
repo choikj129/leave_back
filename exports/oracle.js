@@ -32,157 +32,182 @@ db.createPool({
 })
 
 module.exports = {
-    connection: (callback) => {
-        pool.getConnection(
-            (err, connection) => {
-                if (err) {
-                    console.log("DB connection error")
-                    console.error(err)
-                    callback(false)
-                } else {
+    connection: async () => {
+        try {
+            return await pool.getConnection()
+                .then((connection) => {
                     console.log("DB connection success")
-                    /* 리턴한 connection 객체 사용 */
-                    callback(true, connection)
-                }
+                    return connection
+                })
+        } catch (e) {
+            throw new Error("DB connection error")
+        }
+    },    
+    select: async (conn, query, params) => {
+        query = funcs.replaceQuery(query, params)
+        try {
+            return await conn.execute(query, {})
+                .then(result => {
+                    console.log("DB select success")
+                    return result.rows
+                })
+        } catch(e) {
+            console.error("==========================================================")
+            console.error(query)
+            console.error("==========================================================")
+            console.error(e)
+            throw new Error("DB select error")
+        }
+    },
+    /* 다수의 select 쿼리 처리 */
+    multiSelect : async (conn, hash) => {
+        /*
+            hash = {
+                key : {query : "", params : {}}
             }
-        )
+            */
+        let returnData = {}
+        let key = null
+        try {
+            keys = Object.keys(hash)
+            for (const k of keys) {
+                key = k
+                hash[key].query = funcs.replaceQuery(hash[key].query, hash[key].params)
+                await conn.execute(hash[key].query, {})
+                    .then(result => {
+                        returnData[key] = result.rows
+                    })
+            }
+            console.log("DB multi select success")
+            return returnData
+        } catch(e) {
+            console.error("==========================================================")
+            console.error(hash[key].query)
+            console.error("==========================================================")
+            console.error(e)
+            throw new Error("DB multi select error")
+        }
+        
+    },
+    update: async (conn, query, params) => {
+        query = funcs.replaceQuery(query, params)
+        try {
+            return await conn.execute(query, {})
+                .then(result => {
+                    console.log("DB update success")
+                    return result.rowsAffected
+                })
+        } catch(e) {
+            console.error("==========================================================")
+            console.error(query)
+            console.error("==========================================================")
+            console.error(e)
+            throw new Error("DB update error")
+        }        
+    },
+    /* 다수의 select 쿼리 처리 */
+    multiUpdate : async (conn, hash) => {
+        /*
+            hash = {
+                key : {query : "", params : {}}
+            }
+        */
+        let returnData = {}
+        let key = null
+        try {
+            keys = Object.keys(hash)
+            for (const k of keys) {
+                key = k
+                hash[key].query = funcs.replaceQuery(hash[key].query, hash[key].params)
+                await conn.execute(hash[key].query, {})
+                    .then(result => {
+                        returnData[key] = result.rowsAffected
+                    })
+            }
+            console.log("DB multi update success")
+            return returnData
+        } catch(e) {
+            console.error("==========================================================")
+            console.error(hash[key].query)
+            console.error("==========================================================")
+            console.error(e)
+            throw new Error("DB multi update error")
+        }
+        
+    },
+    /* Bulk update */
+    updateBulk: async (conn, query, params) => {
+        /*
+            SQL문이 모두 동일해야 하기 때문에 query replace는 불가
+        */
+        params = funcs.queryParamsFilter(query, params)
+        if (params.length > 0) {
+            try {
+                return await conn.executeMany(query, params)
+                    .then(result => {                    
+                        console.log("DB update bulk success")
+                        return result.rowsAffected
+                    })
+            } catch {
+                console.error("==========================================================")
+                console.error(query)
+                console.error("==========================================================")
+                console.error(e)
+                throw new Error("DB update bulk error")
+            }
+        }else {
+            console.log("No params data [update bulk]")
+            return []
+        }
+    },
+    /* 다수의 Bulk update */
+    multiUpdateBulk : async (conn, hash) => {
+        let returnData = {}
+        let key = null
+        try {
+            keys = Object.keys(hash)
+            for (const k of keys) {
+                key = k
+                const params = funcs.queryParamsFilter(hash[key].query, hash[key].params)
+                console.log(key)
+                console.log(params)
+                await conn.executeMany(hash[key].query, params)
+                    .then(result => {
+                        returnData[key] = result.rowsAffected
+                    })                
+            }
+            console.log("DB multi update bulk success")
+            return returnData
+        } catch(e) {
+            console.error("==========================================================")
+            console.error(hash[key].query)
+            console.error("==========================================================")
+            console.error(e)
+            throw new Error("DB multi update bulk error")
+        }
     },
     close: (conn) => {
         try {
             console.log("DB Close")
             conn.close()
         } catch {
-            console.log("invalid connection")
+            console.error("Invalid connection")
         }
     },
-    select: (conn, query, params, callback) => {
-        query = funcs.replaceQuery(query, params)
-        conn.execute(query, {}, (err, result) => {
-            if (err) {
-                console.log("DB select error")
-                console.log("==========================================================")
-                console.log(query)
-                console.log("==========================================================")
-                console.error(err)
-                callback(false)
-            } else {
-                console.log("DB select success")
-                callback(true, result.rows)
-            }
-        })
-    },
-    /* 다수의 select 쿼리 처리 */
-    multiSelect : (conn, hash, callback) => {
-        /*
-            hash = {
-                key : {query : "", params : {}}
-            }
-        */
-        keys = Object.keys(hash)
-        if (keys.length > 0) {
-            returnData = {}
-            keys.forEach((key, i) => {
-                hash[key].query = funcs.replaceQuery(hash[key].query, hash[key].params)
-                conn.execute(hash[key].query, {}, (err, result) => {
-                    if (err) {
-                        console.log("DB multi select error")
-                        console.log("==========================================================")
-                        console.log(hash[key].query)
-                        console.log("==========================================================")
-                        console.error(err)
-                        callback(false)
-                        return false;
-                    } else {
-                        returnData[key] = result.rows
-                        if (i == keys.length -1) {
-                            console.log("DB multi select success")
-                            callback(true, returnData)
-                        }
-                    }
-                })
-            })
-        } else {
-            console.log("No hash keys [multi select]")
-            callback(true, 0)
-        }
-        
-    },
-    update: (conn, query, params, callback) => {
-        query = funcs.replaceQuery(query, params)
-        conn.execute(query, {}, (err, result) => {
-            if (err) {
-                console.log("DB update error")
-                console.log("==========================================================")
-                console.log(query)
-                console.log("==========================================================")
-                console.error(err)
-                callback(false)
-            } else {
-                console.log("DB update success")
-                callback(true, result.rowsAffected)
-            }
-        })
-    },
-    /* Bulk update */
-    updateBulk: (conn, query, params, callback) => {
-        /*
-            SQL문이 모두 동일해야 하기 때문에 query replace는 불가
-        */
-        params = funcs.queryParamsFilter(query, params)
-        if (params.length > 0) {
-            conn.executeMany(query, params, (err, result) => {
-                if (err) {
-                    console.log("DB update bulk error")
-                    console.log("==========================================================")
-                    console.log(query)
-                    console.log("==========================================================")
-                    console.error(err)
-                    callback(false)
-                } else {
-                    console.log("DB update bulk success")
-                    callback(true, result.rowsAffected)
-                }
-            })
-        }else {
-            console.log("No params data [update bulk]")
-            callback(true, 0)
+    commit: async (conn) => {
+        try {
+            console.log("DB commit")
+            await conn.commit()
+        } catch {
+            console.error("Commit error")
         }
     },
-    /* 다수의 Bulk update */
-    multiUpdateBulk : (conn, hash, callback) => {
-        keys = Object.keys(hash)
-        if (keys.length > 0) {
-            returnData = {}
-            keys.forEach((key, i) => {
-                conn.executeMany(hash[key].query, hash[key].params, (err, result) => {
-                    if (err) {
-                        console.log("DB multi update bulk error")
-                        console.log("==========================================================")
-                        console.log(hash[key].query)
-                        console.log("==========================================================")
-                        console.error(err)
-                        callback(false)
-                        return false;
-                    } else {
-                        returnData[key] = result.rowsAffected
-                        if (i == keys.length -1) {
-                            console.log("DB multi update bulk success")
-                            callback(true, returnData)
-                        }
-                    }
-                })
-            })
-        } else {
-            console.log("No params data [multi update bulk]")
-            callback(true, 0)
+    rollback: async (conn) => {
+        try {
+            console.log("DB rollback")
+            await conn.rollback()
+        } catch {
+            console.error("Rollback error")
         }
-    },
-    commit: (conn) => {
-        console.log("DB commit")
-        conn.commit()
-    },
-    rollback: (conn) => {
-        console.log("DB rollback")
-        conn.rollback()
     },
 }
