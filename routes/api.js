@@ -1,25 +1,24 @@
-var express = require('express');
-var router = express.Router();
-
-const db = require("../exports/oracle");
-const funcs = require("../exports/functions");
-const dbfuncs = require("../exports/dbfunctions");
+var express = require('express')
+var router = express.Router()
+const db = require("../exports/oracle")
+const funcs = require("../exports/functions")
 
 //코드에서 키 불러오기
 router.get("/code", async (req, res, next) => {
 	let  conn 
 		try {
 			conn = await db.connection()
-			const sql = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y' ORDER BY 코드명`;
+			const sql = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y' ORDER BY 코드명`
 			const rows = await db.select(conn, sql, {})
 			funcs.sendSuccess(res, rows)
 		} catch (e){
+			db.rollback(conn)
 			console.error(e)
 			funcs.sendFail(res, e)
 		} finally {
 			db.close(conn)
 	}
-});
+})
 
 
 // 키 이름 수정
@@ -41,9 +40,10 @@ router.post('/update', async (req, res, next) => {
 	try {
 		conn = await db.connection()
 		const rows = await db.update(conn, sql, updParam)
-		db.commit(conn)
+		await db.commit(conn)
 		funcs.sendSuccess(res, rows)
 	} catch (e){
+		await db.rollback(conn)
 		console.error(e)
 		funcs.sendFail(res, e)
 	} finally {
@@ -51,4 +51,4 @@ router.post('/update', async (req, res, next) => {
 	}
 })
 
-module.exports = router;
+module.exports = router
