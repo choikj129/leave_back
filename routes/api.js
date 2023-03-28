@@ -7,15 +7,18 @@ const dbfuncs = require("../exports/dbfunctions");
 
 //코드에서 키 불러오기
 router.get("/code", async (req, res, next) => {
-	// TODO: 
-	try {
-		const {rows} = await dbfuncs.getCode("공공데이터키")
-		console.log("result api",rows)
-		funcs.sendSuccess(res, rows)
-	} catch (e){
-		console.log(e)
-		funcs.sendFail(res, e)
-	} 
+	let  conn 
+		try {
+			conn = await db.connection()
+			const sql = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y' ORDER BY 코드명`;
+			const rows = await db.select(conn, sql, {})
+			funcs.sendSuccess(res, rows)
+		} catch (e){
+			console.error(e)
+			funcs.sendFail(res, e)
+		} finally {
+			db.close(conn)
+	}
 });
 
 
@@ -31,17 +34,21 @@ router.post('/update', async (req, res, next) => {
                     UPDATE CODE SET
 						표시내용 = :key
 					WHERE
-					코드구분 = :name
+					코드구분 = '공공데이터키'
                 `
-	const updParam = {name : "공공데이터키", key:param.key}
+	const updParam = {key:param.key}
+	let conn
 	try {
-		const {rowsAffected} = await dbfuncs.doQuery(sql, updParam)
-		console.log("result update api",rowsAffected)
-		funcs.sendSuccess(res, rowsAffected)
+		conn = await db.connection()
+		const rows = await db.update(conn, sql, updParam)
+		db.commit(conn)
+		funcs.sendSuccess(res, rows)
 	} catch (e){
-		console.log(e)
+		console.error(e)
 		funcs.sendFail(res, e)
-	} 
+	} finally {
+		db.close(conn)
+	}
 })
 
 module.exports = router;
