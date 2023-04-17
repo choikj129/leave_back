@@ -87,24 +87,25 @@ router.get("/user", async (req, res, next) => {
     let conn
 	try {
 		conn = await db.connection()
+        const where = req.query.isNow ? "AND TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN 등록일 AND 만료일" : ""
         const rewardSql = `
-            SELECT * 
-            FROM REWARD 
-            WHERE 
-                TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN 등록일 AND 만료일 
-                AND 아이디 = :id
+            SELECT *
+            FROM REWARD
+            WHERE
+                아이디 = :id
                 AND 휴가일수 > 사용일수
                 AND 휴가유형 = '포상'
+                ${where}
             ORDER BY 등록일, IDX
         `
         const refreshSql = `
-            SELECT * 
-            FROM REWARD 
-            WHERE 
-                TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN 등록일 AND 만료일 
-                AND 아이디 = :id
+            SELECT *
+            FROM REWARD
+            WHERE
+                아이디 = :id
                 AND 휴가일수 > 사용일수
                 AND 휴가유형 = '리프레시'
+                ${where}
             ORDER BY 등록일, IDX
         `
 		const result = await db.multiSelect(conn, {

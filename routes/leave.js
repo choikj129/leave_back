@@ -7,18 +7,35 @@ let kakaowork = require("../exports/kakaowork")
 /* 휴가 일정 페이지 접속 (이벤트 목록) */
 router.get("/", async (req, res, next) => {
     const id = req.query.id
-    const isAll = JSON.parse(req.query.isAll)
     let conn
 	try {
 		conn = await db.connection()
-        const sql = isAll
+        const sql = !id
             ? `
-                SELECT IDX, 이름 || ' ' || 직위 || ' ' || 내용 내용, 시작일, 종료일, 휴가일수
+                SELECT 
+                    IDX,
+                    이름 || ' ' || 직위 || ' ' || 내용 내용,
+                    시작일,
+                    종료일,
+                    휴가일수                    
                 FROM LEAVE L, EMP_POS E
                 WHERE L.아이디 = E.아이디
                 ORDER BY 내용
             `
-            : `SELECT IDX, 내용, 시작일, 종료일, 휴가일수 FROM LEAVE where 아이디 = :id ORDER BY 내용`
+            : `
+                SELECT 
+                    DISTINCT L.IDX,
+                    L.내용,
+                    L.시작일,
+                    L.종료일,
+                    L.휴가일수,
+                    LD.휴가구분,
+                    LD.기타휴가내용,
+                    L.REWARD_IDX
+                FROM LEAVE L, LEAVE_DETAIL LD
+                WHERE 아이디 = :id AND L.IDX = LD.LEAVE_IDX
+                ORDER BY 내용
+            `
 
 		const result = await db.select(conn, sql, { id: id })
 
@@ -37,12 +54,13 @@ router.patch("/", async (req, res, next) => {
         let params = req.body.events
         const id = req.body.id
         const name = req.body.name
+
         const seqSelect = "SELECT SEQ_LEAVE.NEXTVAL SEQ FROM LEAVE"
         const leaveInsert = `
             INSERT INTO LEAVE
-            (IDX, 내용, 시작일, 종료일, 휴가일수, 아이디)
+            (IDX, 내용, 시작일, 종료일, 휴가일수, 아이디, REWARD_IDX)
             VALUES
-            (:seq, :name, :startDate, :endDate, :cnt, :id)
+            (:seq, :name, :startDate, :endDate, :cnt, :id, :updateReward)
         `
         const leaveDetailInsert = `
             INSERT INTO LEAVE_DETAIL
@@ -56,25 +74,33 @@ router.patch("/", async (req, res, next) => {
         const leaveDetailDelete = `
             DELETE FROM LEAVE_DETAIL WHERE LEAVE_IDX = :idx
         `
+        const rewardUpdate = `
+            UPDATE REWARD SET 사용일수 = :사용일수 WHERE IDX = :IDX AND 사용일수 != :사용일수
+        `
+        const rewardDelete = `
+            UPDATE REWARD SET 사용일수 = 사용일수 - :cnt WHERE IDX = :idx
+        `
         const historyInsert = `
             INSERT INTO HISTORY (아이디, 내용)
             VALUES (:id, :name)
         `
-        let dbHash = {}
-        dbHash.history = {query : historyInsert, params : []}
+        let dbHash = {
+            leaveInsert : {query : leaveInsert, params : []},
+            leaveDetailInsert : {query : leaveDetailInsert, params : []},
+            leaveDelete : {query : leaveDelete, params : []},
+            leaveDetailDelete : {query : leaveDetailDelete, params : []},
+            history : {query : historyInsert, params : []},
+            rewardUpdate : {query : rewardUpdate, params : req.body.reward},
+            rewardDelete : {query : rewardDelete, params : []},
+        }
+
         let kakaoWorkArr = []
         for (const param of params) {
             const seqResult = await db.select(conn, seqSelect, {})
             const seq = seqResult[0].SEQ
             dbHash.history.params.push({id : id, name : param.name})
             if (param.updateType == "I") {
-                dbHash.leaveInsert = !dbHash.leaveInsert
-                    ? {query : leaveInsert, params : []}
-                    : dbHash.leaveInsert
-                dbHash.leaveDetailInsert = !dbHash.leaveDetailInsert
-                    ? {query : leaveDetailInsert, params : []}
-                    : dbHash.leaveDetailInsert
-                
+                /* LEAVE INSERT */                
                 dbHash.leaveInsert.params.push({
                     seq: seq,
                     name: param.name,
@@ -82,7 +108,9 @@ router.patch("/", async (req, res, next) => {
                     endDate: param.endDate,
                     cnt: param.cnt,
                     id: id,
-                })
+                    updateReward : param.updateReward
+                })                                
+                /* LEAVE_DETAIL INSERT */
                 let date = new Date(param.startDate)
                 for (j = 0; j < param.cnt; j++) {
                     const year = date.getFullYear()
@@ -93,23 +121,27 @@ router.patch("/", async (req, res, next) => {
                         seq : seq,
                         ymd : ymd,
                         type : param.type,
-                        etcType : param.etcType ? param.etcType : null,
+                        etcType : param.etcType,
                     })
                     date.setDate(date.getDate() + 1)
                 }
             } else if (param.updateType == "D") {
-                dbHash.leaveDelete = !dbHash.leaveDelete
-                    ? {query : leaveDelete, params : []}
-                    : dbHash.leaveDelete
-                dbHash.leaveDetailDelete = !dbHash.leaveDetailDelete
-                    ? {query : leaveDetailDelete, params : []}
-                    : dbHash.leaveDetailDelete
+                /* LEAVE & LEAVE_DETAIL DELETE */
                 dbHash.leaveDelete.params.push({idx : param.IDX})
                 dbHash.leaveDetailDelete.params.push({idx : param.IDX})
+
+                if (param.rewardIdx) {
+                    let rewardIdx = JSON.parse(param.rewardIdx)
+                    for (const key of Object.keys(rewardIdx)) {
+                        dbHash.rewardDelete.params.push({
+                            idx : key,
+                            cnt : rewardIdx[key]
+                        })
+                    }
+                }
             }
             kakaoWorkArr.push(param.name)
         }
-
         await db.multiUpdateBulk(conn, dbHash)
 
         const contents = `${name}\n${kakaoWorkArr.sort().join("\n")}`
@@ -135,7 +167,7 @@ router.get("/lists", async (req, res, next) => {
 	try {
 		conn = await db.connection()
         /* 관리자는 휴가 중 최소 휴가연도, 기본 직원은 본인 신청 최소 휴가연도 */
-        const dateSql = !req.session.user.isManager
+        const dateSql = !req.query.isManager
         ? `
             SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
             FROM LEAVE_DETAIL LD, LEAVE L

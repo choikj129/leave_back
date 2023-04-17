@@ -169,12 +169,14 @@ module.exports = {
             for (const k of keys) {
                 key = k
                 const params = funcs.queryParamsFilter(hash[key].query, hash[key].params)
-                console.log(key)
-                console.log(params)
-                await conn.executeMany(hash[key].query, params)
-                    .then(result => {
-                        returnData[key] = result.rowsAffected
-                    })                
+                if (params.length > 0) {
+                    await conn.executeMany(hash[key].query, params)
+                        .then(result => {
+                            returnData[key] = result.rowsAffected
+                        })
+                } else {
+                    returnData[key] = 0
+                }
             }
             console.log("DB multi update bulk success")
             return returnData
