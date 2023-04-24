@@ -14,7 +14,8 @@ router.get("/", async (req, res, next) => {
             WHERE
                 R.아이디 = E.아이디
                 AND E.아이디 = :id
-            ORDER BY 등록일 DESC
+                AND R.기준연도 = :year
+            ORDER BY 등록일
         `
 		const result = await db.select(conn, sql, req.query)
 
