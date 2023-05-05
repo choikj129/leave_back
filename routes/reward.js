@@ -34,9 +34,9 @@ router.put("/", async (req, res, next) => {
 		conn = await db.connection()
         const sql = `
             INSERT INTO REWARD (
-                아이디, 휴가유형, 휴가일수, 등록일, 만료일
+                아이디, 휴가유형, 휴가일수, 등록일, 만료일, 기준연도
             ) VALUES (
-                :id, :type, :cnt, :date, TO_CHAR(ADD_MONTHS(TO_DATE(:date, 'YYYYMMDD'), 12)-1, 'YYYYMMDD')
+                :id, :type, :cnt, :date, TO_CHAR(ADD_MONTHS(TO_DATE(:date, 'YYYYMMDD'), 12)-1, 'YYYYMMDD'), :year
             )
         `
 		const result = await db.update(conn, sql, {
@@ -88,7 +88,6 @@ router.get("/user", async (req, res, next) => {
     let conn
 	try {
 		conn = await db.connection()
-        const where = req.query.isNow ? "AND TO_CHAR(SYSDATE, 'YYYYMMDD') BETWEEN 등록일 AND 만료일" : ""
         const rewardSql = `
             SELECT *
             FROM REWARD
@@ -96,8 +95,8 @@ router.get("/user", async (req, res, next) => {
                 아이디 = :id
                 AND 휴가일수 > 사용일수
                 AND 휴가유형 = '포상'
-                ${where}
-            ORDER BY 등록일, IDX
+                AND 기준연도 = :year
+            ORDER BY 만료일, IDX
         `
         const refreshSql = `
             SELECT *
@@ -106,12 +105,12 @@ router.get("/user", async (req, res, next) => {
                 아이디 = :id
                 AND 휴가일수 > 사용일수
                 AND 휴가유형 = '리프레시'
-                ${where}
-            ORDER BY 등록일, IDX
+                AND 기준연도 = :year
+            ORDER BY 만료일, IDX
         `
 		const result = await db.multiSelect(conn, {
-            reward : { query : rewardSql, params : { id : req.query.id } },
-            refresh : { query : refreshSql, params : { id : req.query.id } },
+            reward : { query : rewardSql, params : req.query },
+            refresh : { query : refreshSql, params : req.query },
         })
 
 		funcs.sendSuccess(res, result)
