@@ -19,8 +19,6 @@ router.get("/holiday", async (req, res, next) => {
 	} finally {
 		db.close(conn)
 	}
-	const holiday = rows[0].KEY
-	console.log("holiday", holiday)
     const thisYear = req.query.year
     let url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo'
     let numOfRows = '100'

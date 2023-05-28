@@ -29,6 +29,7 @@ module.exports = {
         let match = query.match(/:[\w$ㄱ-ㅎㅏ-ㅣ가-힣]+/g)
         let returnParams = []
         params.forEach(param => {
+            if (!param) return
             let paramMap = {}
             match.forEach(matchValue => {
                 matchValue = matchValue.substring(1)

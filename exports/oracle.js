@@ -148,7 +148,7 @@ module.exports = {
                         console.log("DB update bulk success")
                         return result.rowsAffected
                     })
-            } catch {
+            } catch (e) {
                 console.error("==========================================================")
                 console.error(query)
                 console.error("==========================================================")
