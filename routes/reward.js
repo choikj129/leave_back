@@ -39,12 +39,7 @@ router.put("/", async (req, res, next) => {
                 :id, :type, :cnt, :date, TO_CHAR(ADD_MONTHS(TO_DATE(:date, 'YYYYMMDD'), 12)-1, 'YYYYMMDD'), :year
             )
         `
-		const result = await db.update(conn, sql, {
-            id : req.body.id,
-            type : req.body.type,
-            cnt : req.body.cnt,
-            date : req.body.date,
-        })
+		const result = await db.update(conn, sql, req.body)
         
         await db.commit(conn)
 		funcs.sendSuccess(res, result)
@@ -83,7 +78,6 @@ router.delete("/", async (req, res, next) => {
 	}	
 })
 
-/* 직원별 사용가능 포상 / 리프레시 휴가 조회 */
 router.get("/user", async (req, res, next) => {
     let conn
 	try {
@@ -107,6 +101,40 @@ router.get("/user", async (req, res, next) => {
                 AND 휴가유형 = '리프레시'
                 AND 기준연도 = :year
             ORDER BY 만료일, IDX
+        `
+		const result = await db.multiSelect(conn, {
+            reward : { query : rewardSql, params : req.query },
+            refresh : { query : refreshSql, params : req.query },
+        })
+
+		funcs.sendSuccess(res, result)
+	} catch(e) {
+		funcs.sendFail(res, e)
+	} finally {
+		db.close(conn)
+	}
+})
+
+/* 직원별 포상 / 리프레시 휴가 개수 조회 */
+router.get("/cnts", async (req, res, next) => {
+    let conn
+	try {
+		conn = await db.connection()
+        const rewardSql = `
+            SELECT NVL(SUM(휴가일수), 0) 휴가일수, NVL(SUM(사용일수), 0) 사용일수
+            FROM REWARD
+            WHERE
+                아이디 = :id
+                AND 기준연도 = :year
+                AND 휴가유형 = '포상'
+        `
+        const refreshSql = `
+            SELECT NVL(SUM(휴가일수), 0) 휴가일수, NVL(SUM(사용일수), 0) 사용일수
+            FROM REWARD
+            WHERE
+                아이디 = :id
+                AND 기준연도 = :year
+                AND 휴가유형 = '리프레시'
         `
 		const result = await db.multiSelect(conn, {
             reward : { query : rewardSql, params : req.query },
