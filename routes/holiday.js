@@ -9,10 +9,10 @@ router.get("/", async (req, res, next) => {
 	try {
 		conn = await db.connection()
 		const sql = `
-			SELECT 명칭, TO_CHAR(MIN(날짜), 'YYYY-MM-DD') 시작일, TO_CHAR(MAX(날짜), 'YYYY-MM-DD') 종료일, 수동여부
+			SELECT 명칭, TO_CHAR(TO_DATE(MIN(날짜), 'YYYYMMDD'), 'YYYY-MM-DD') 시작일, TO_CHAR(TO_DATE(MAX(날짜), 'YYYYMMDD'), 'YYYY-MM-DD') 종료일, 수동여부
 			FROM HOLIDAY
 			WHERE
-				연도 = :year
+				날짜 LIKE :year || '%'
 			GROUP BY 명칭, 수동여부
 			ORDER BY 시작일
 		`
@@ -31,9 +31,9 @@ router.get("/detail", async (req, res, next) => {
 	try {
 		conn = await db.connection()
 		const sql = `
-			SELECT 명칭, TO_CHAR(날짜,'YYYY') 년, TO_CHAR(날짜,'MM') 월, TO_CHAR(날짜,'DD') 일
+			SELECT 명칭, SUBSTR(날짜, 0, 4) 년, SUBSTR(날짜, 5, 2) 월, SUBSTR(날짜, 7, 2) 일
 			FROM HOLIDAY
-			WHERE 연도 > TO_CHAR(SYSDATE - (INTERVAL '3' YEAR), 'YYYY')
+			WHERE 날짜 > TO_CHAR(SYSDATE - (INTERVAL '3' YEAR), 'YYYY')
 			ORDER BY 날짜
 		`
 		const result = await db.select(conn, sql, req.query)

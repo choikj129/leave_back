@@ -14,23 +14,16 @@ router.get("/holiday", async (req, res, next) => {
 		const selectCode = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y'`
 		const rows = await db.select(conn, selectCode, {})
 
-		const url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo'
-	
-		// params
 		const year = !req.query.year ? today.getFullYear() : req.query.year
 		const numOfRows = '100'
 		const _type = 'json'
 		const holidayKey = rows[0].KEY
-	
+		const url = `http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo?numOfRows=${numOfRows}&_type=${_type}&solYear=${year}&ServiceKey=${holidayKey}`
+		
 		let response = await axios.get(url, {
 			headers : {
 				'Content-type': 'application/json;charset=UTF-8',
 				'Accept': '*/*'
-			}, params : {
-				numOfRows : numOfRows,
-				solYear : year,
-				ServiceKey : holidayKey,
-				_type : _type
 			}
 		})
 		
@@ -49,13 +42,13 @@ router.get("/holiday", async (req, res, next) => {
 			USING DUAL
 				ON (
 					명칭 = :dateName
-					AND 날짜 = TO_DATE(:locdate,'YYYYMMDD')
+					AND 날짜 = :locdate
 				)
 			WHEN MATCHED THEN
 				UPDATE SET 수정일자 = SYSDATE
 			WHEN NOT MATCHED THEN
 				INSERT (명칭, 날짜, 연도)
-				VALUES (:dateName, TO_DATE(:locdate,'YYYYMMDD'), ${year})
+				VALUES (:dateName, :locdate, ${year})
 		`
 		const result = await db.updateBulk(conn, insertHoliday, params)
 		await db.commit(conn)
