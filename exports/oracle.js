@@ -43,7 +43,7 @@ module.exports = {
             throw new Error("DB connection error")
         }
     },    
-    select: async (conn, query, params) => {
+    select: async (conn, query, params = {}) => {
         query = funcs.replaceQuery(query, params)
         try {
             return await conn.execute(query, {})
@@ -60,7 +60,7 @@ module.exports = {
         }
     },
     /* 다수의 select 쿼리 처리 */
-    multiSelect : async (conn, hash) => {
+    multiSelect : async (conn, hash = {}) => {
         /*
             hash = {
                 key : {query : "", params : {}}
@@ -89,7 +89,7 @@ module.exports = {
         }
         
     },
-    update: async (conn, query, params) => {
+    update: async (conn, query, params = []) => {
         query = funcs.replaceQuery(query, params)
         try {
             return await conn.execute(query, {})
@@ -106,7 +106,7 @@ module.exports = {
         }        
     },
     /* 다수의 select 쿼리 처리 */
-    multiUpdate : async (conn, hash) => {
+    multiUpdate : async (conn, hash = {}) => {
         /*
             hash = {
                 key : {query : "", params : {}}
@@ -136,7 +136,7 @@ module.exports = {
         
     },
     /* Bulk update */
-    updateBulk: async (conn, query, params) => {
+    updateBulk: async (conn, query, params = []) => {
         /*
             SQL문이 모두 동일해야 하기 때문에 query replace는 불가
         */
@@ -161,7 +161,7 @@ module.exports = {
         }
     },
     /* 다수의 Bulk update */
-    multiUpdateBulk : async (conn, hash) => {
+    multiUpdateBulk : async (conn, hash = {}) => {
         let returnData = {}
         let key = null
         try {
