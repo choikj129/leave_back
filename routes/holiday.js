@@ -31,9 +31,9 @@ router.get("/detail", async (req, res, next) => {
 	try {
 		conn = await db.connection()
 		const sql = `
-			SELECT 명칭, SUBSTR(날짜, 0, 4) 년, SUBSTR(날짜, 5, 2) 월, SUBSTR(날짜, 7, 2) 일
+			SELECT 명칭, 날짜
 			FROM HOLIDAY
-			WHERE 날짜 > TO_CHAR(SYSDATE - (INTERVAL '3' YEAR), 'YYYY')
+			WHERE 날짜 > TO_CHAR(SYSDATE - (INTERVAL '1' YEAR), 'YYYY')
 			ORDER BY 날짜
 		`
 		const result = await db.select(conn, sql, req.query)
@@ -45,7 +45,7 @@ router.get("/detail", async (req, res, next) => {
 	}
 })
 
-/* 공휴일 상세 목록 불러오기 */
+/* 공휴일 수동 삽입 */
 router.put("/", async (req, res, next) => {
 	let conn
 	try {
@@ -54,8 +54,28 @@ router.put("/", async (req, res, next) => {
 			INSERT INTO HOLIDAY (명칭, 날짜, 수동여부)
             VALUES (:name, :holiday, 'Y')
 		`
-        console.log(req.body.holidays)
 		const result = await db.updateBulk(conn, sql, req.body.holidays)
+        await db.commit(conn)
+		funcs.sendSuccess(res, result)
+	} catch (e) {
+		funcs.sendFail(res, e)
+	} finally {
+		db.close(conn)
+	}
+})
+
+/* 공휴일 삭제 */
+router.delete("/", async (req, res, next) => {
+	let conn
+	try {
+		conn = await db.connection()		
+		const sql = `
+			DELETE FROM HOLIDAY
+			WHERE
+				명칭 = :name
+				AND 날짜 LIKE :year || '%'
+		`
+		const result = await db.update(conn, sql, req.body)
         await db.commit(conn)
 		funcs.sendSuccess(res, result)
 	} catch (e) {
