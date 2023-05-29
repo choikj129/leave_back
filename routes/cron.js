@@ -11,50 +11,61 @@ router.get("/holiday", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const sql = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y' ORDER BY 코드명`
-		const rows = await db.select(conn, sql) 
-	} catch (e){
-		console.error(e)
-		funcs.sendFail(res, e)
-	} finally {
-		db.close(conn)
-	}
-    const thisYear = req.query.year
-    let url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo'
-    let numOfRows = '100'
-    let solYear = thisYear == null ? today.getFullYear() : thisYear 
-    let _type = 'json'
-    let response = await axios.get(url,{
-        headers : {
-            'Content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Accept': '*/*'
-        }, params : {
-            numOfRows : numOfRows,
-            solYear : solYear,
-            ServiceKey : holidayKey,
-            _type : _type
-        }
-    })
+		const selectCode = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y'`
+		const rows = await db.select(conn, selectCode, {}) 
 
-	try {
+		const url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo'
+	
+		// params
+		const year = !req.query.year ? today.getFullYear() : req.query.year
+		const numOfRows = '100'
+		const _type = 'json'
+		const holidayKey = rows[0].KEY
+	
+		let response = await axios.get(url, {
+			headers : {
+				'Content-type': 'application/json;charset=UTF-8',
+				'Accept': '*/*'
+			}, params : {
+				numOfRows : numOfRows,
+				solYear : year,
+				ServiceKey : holidayKey,
+				_type : _type
+			}
+		})
+		
+		let name = ""
+		const params = response.data.response.body.items.item.filter(param => {
+			if (param.dateName == "대체공휴일") {
+				if (!param.dateName.endsWith(")")) param.dateName += `(${name})`
+			} else name = param.dateName
+
+			return param.isHoliday == "N" ? false : true
+		})
+		console.log(params)
 		conn = await db.connection()
-		const sql =
-			`
-				MERGE INTO HOLIDAY a
-				USING DUAL
-					ON (a.날짜 = to_date(:locdate,'YYYY-MM-DD'))
-				WHEN NOT MATCHED THEN
-					INSERT (a.명칭, a.휴일여부, a.날짜, a.수정일자)
-					VALUES (:dateName, :isHoliday, to_date(:locdate,'YYYY-MM-DD'),sysdate)
-			`
-		const result = await db.updateBulk(conn, sql,response.data.response.body.items.item)
+		const insertHoliday =`
+			MERGE INTO HOLIDAY H
+			USING DUAL
+				ON (
+					명칭 = :dateName
+					AND 날짜 = TO_DATE(:locdate,'YYYYMMDD')
+				)
+			WHEN MATCHED THEN
+				UPDATE SET 수정일자 = SYSDATE
+			WHEN NOT MATCHED THEN
+				INSERT (명칭, 날짜, 연도)
+				VALUES (:dateName, TO_DATE(:locdate,'YYYYMMDD'), ${year})
+		`
+		const result = await db.updateBulk(conn, insertHoliday, params)
 		await db.commit(conn)
 		funcs.sendSuccess(res, result)
+
 	} catch (e){
 		await db.rollback(conn)
 		console.error(e)
 		funcs.sendFail(res, e)
-	} finally{
+	} finally {
 		db.close(conn)
 	}
 })
