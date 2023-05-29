@@ -52,7 +52,7 @@ router.put("/", async (req, res, next) => {
 		conn = await db.connection()		
 		const sql = `
 			INSERT INTO HOLIDAY (명칭, 날짜, 수동여부)
-            VALUES (:name, TO_DATE(:holiday, 'YYYYMMDD'), 'Y')
+            VALUES (:name, :holiday, 'Y')
 		`
         console.log(req.body.holidays)
 		const result = await db.updateBulk(conn, sql, req.body.holidays)
