@@ -12,7 +12,7 @@ router.get("/holiday", async (req, res, next) => {
 	try {
 		conn = await db.connection()
 		const selectCode = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y'`
-		const rows = await db.select(conn, selectCode, {}) 
+		const rows = await db.select(conn, selectCode, {})
 
 		const url = 'http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo'
 	
@@ -74,6 +74,33 @@ router.put("/carry-over", async (req, res, next) => {
 	/* TO-DO
 		미사용 & 만료 안 된 포상, 리프레시 휴가 이월	
 	*/
+	// const year = new Date().getFullYear()
+	const year = 2024
+	let conn
+	try {
+		conn = await db.connection()
+		const insert = `
+			INSERT INTO REWARD (
+				아이디, 휴가유형, 휴가일수, 등록일, 만료일, 사용일수, 기준연도, ROOT_IDX
+			)
+			SELECT 아이디, 휴가유형, 휴가일수 - 사용일수, 등록일, 만료일, 0, ${year}, IDX
+			FROM REWARD
+			WHERE 
+				기준연도 = TO_CHAR(${year} - 1)
+				AND 휴가일수 > 사용일수
+				AND 만료일 >= ${year} || '0101'
+		`
+		const result = await db.select(conn, insert, {})
+
+		await db.commit(conn)
+		funcs.sendSuccess(res, result)
+	} catch (e) {
+		await db.rollback(conn)
+		console.error(e)
+		funcs.sendFail(res, e)
+	} finally {
+		db.close(conn)
+	}
 })
 
 module.exports = router
