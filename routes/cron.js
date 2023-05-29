@@ -35,7 +35,7 @@ router.get("/holiday", async (req, res, next) => {
 
 			return param.isHoliday == "N" ? false : true
 		})
-		console.log(params)
+
 		conn = await db.connection()
 		const insertHoliday =`
 			MERGE INTO HOLIDAY H
@@ -47,8 +47,8 @@ router.get("/holiday", async (req, res, next) => {
 			WHEN MATCHED THEN
 				UPDATE SET 수정일자 = SYSDATE
 			WHEN NOT MATCHED THEN
-				INSERT (명칭, 날짜, 연도)
-				VALUES (:dateName, :locdate, ${year})
+				INSERT (명칭, 날짜)
+				VALUES (:dateName, :locdate)
 		`
 		const result = await db.updateBulk(conn, insertHoliday, params)
 		await db.commit(conn)
