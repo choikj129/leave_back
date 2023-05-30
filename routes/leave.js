@@ -228,7 +228,7 @@ router.get("/cnts", async (req, res, next) => {
                 SELECT
                     아이디,
                     SUBSTR(휴가일, 0, 4) 연도,
-                    SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, '포상', 0, '리프레시', 0, 1)) 사용휴가수
+                    SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, '포상', 0, '리프', 0, 1)) 사용휴가수
                 FROM LEAVE L, LEAVE_DETAIL LD
                 WHERE 
                     L.IDX = LD.LEAVE_IDX 
