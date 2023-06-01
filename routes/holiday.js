@@ -33,8 +33,8 @@ router.get("/detail", async (req, res, next) => {
 		const sql = `
 			SELECT 명칭, 날짜
 			FROM HOLIDAY
-			WHERE 날짜 > TO_CHAR(SYSDATE - (INTERVAL '1' YEAR), 'YYYY')
-			ORDER BY 날짜
+			WHERE 날짜 > TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY')
+			ORDER BY 날짜		
 		`
 		const result = await db.select(conn, sql, req.query)
 		funcs.sendSuccess(res, result)
