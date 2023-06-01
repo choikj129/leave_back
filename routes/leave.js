@@ -12,15 +12,21 @@ router.get("/", async (req, res, next) => {
 		conn = await db.connection()
         const sql = !id
             ? `
-                SELECT 
-                    IDX,
-                    이름 || ' ' || 직위 || ' ' || 내용 내용,
-                    시작일,
-                    종료일,
-                    휴가일수                    
-                FROM LEAVE L, EMP_POS E
-                WHERE L.아이디 = E.아이디
-                ORDER BY 내용
+                SELECT
+                    DISTINCT L.IDX,
+                    E.이름 || ' ' || E.직위 || ' ' || L.내용 내용,
+                    L.시작일,
+                    L.종료일,
+                    L.휴가일수,
+                    LD.휴가구분,
+                    LD.기타휴가내용,
+                    L.REWARD_IDX
+                FROM LEAVE L, LEAVE_DETAIL LD, EMP_POS E
+                WHERE
+                    L.아이디 = E.아이디
+                    AND L.IDX = LD.LEAVE_IDX
+                    AND 시작일 >= TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY') || '-01-01'
+                ORDER BY 시작일
             `
             : `
                 SELECT 
@@ -33,8 +39,11 @@ router.get("/", async (req, res, next) => {
                     LD.기타휴가내용,
                     L.REWARD_IDX
                 FROM LEAVE L, LEAVE_DETAIL LD
-                WHERE 아이디 = :id AND L.IDX = LD.LEAVE_IDX
-                ORDER BY 내용
+                WHERE 
+                    아이디 = :id 
+                    AND L.IDX = LD.LEAVE_IDX
+                    AND 시작일 >= TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY') || '-01-01'
+                ORDER BY 시작일
             `
 
 		const result = await db.select(conn, sql, { id: id })
