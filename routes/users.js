@@ -12,7 +12,7 @@ router.get("/", async (req, res, next) => {
 		conn = await db.connection()
 		const sql = `
 			SELECT
-				E.아이디, E.이름, E.직위코드, E.직위, E.입사일,
+				E.아이디, E.이름, E.직위코드, E.직위, E.입사일, E.관리자코드, E.생년월일, E.음력여부,
 				:year 연도, LC.휴가수, 
 				NVL(LD.사용휴가수, 0) 사용휴가수,
 				NVL(LD.기타휴가수, 0) 기타휴가수,
@@ -63,7 +63,7 @@ router.get("/", async (req, res, next) => {
 						AND 기준연도 = :year
 					GROUP BY 아이디
 				) RR ON E.아이디 = RR.아이디
-			WHERE 관리자여부 = 'N'
+			WHERE 직위코드 != 'Z'
 			ORDER BY 직위코드, 입사일, 이름
 		`
 		const result = await db.select(conn, sql, {year : req.query.year})
@@ -82,6 +82,15 @@ router.patch("/", async (req, res, next) => {
 	try {
 		conn = await db.connection()
 		const sql = `UPDATE EMP SET 직위코드 = :position, 입사일 = :date WHERE 아이디 = :id`
+		const birthDaySql = `
+			MERGE INTO BIRTHDAY USING DUAL
+				ON (아이디 = :id)
+			WHEN MATCHED THEN
+				UPDATE SET 생년월일 = :birthday
+			WHEN NOT MATCHED THEN
+				INSERT INTO (아이디, 생년월일)
+				VALUES (:id, :birthday)
+		`
 		const result = await db.update(conn, sql, req.body.userInfo)
 
 		await db.commit(conn)
@@ -157,6 +166,28 @@ router.delete("/", async (req, res, next) => {
 		conn = await db.connection()
 		const sql = `DELETE FROM EMP WHERE 아이디 = :id`
 		const result = await db.select(conn, sql, {id : req.body.id})
+
+		await db.commit(conn)
+		funcs.sendSuccess(res, result)
+	} catch(e) {
+		await db.rollback(conn)
+		funcs.sendFail(res, e)
+	} finally {
+		db.close(conn)
+	}
+})
+
+/* 경영지원실 직원 변경 */
+router.patch("/supporter", async (req, res, next) => {
+	let conn
+	try {
+		conn = await db.connection()
+		const updateOld = `UPDATE EMP SET 관리자코드 = 'N' WHERE 관리자코드 = 'K'`
+		const updateNew = `UPDATE EMP SET 관리자코드 = 'K' WHERE 아이디 = :id`
+		const result = await db.multiUpdate(conn, {
+			updateOld : {query : updateOld, params : {}},
+			updateNew : {query : updateNew, params : req.body},
+		})
 
 		await db.commit(conn)
 		funcs.sendSuccess(res, result)

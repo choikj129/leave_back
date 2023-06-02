@@ -96,4 +96,36 @@ router.put("/carry-over", async (req, res, next) => {
 	}
 })
 
+router.get("/birthDay", async (req, res, next) => {	
+	/* TO-DO
+		월 초 생일자 알람
+	*/
+	const year = 2024
+	let conn
+	try {
+		conn = await db.connection()
+		const insert = `
+			INSERT INTO REWARD (
+				아이디, 휴가유형, 휴가일수, 등록일, 만료일, 사용일수, 기준연도, ROOT_IDX
+			)
+			SELECT 아이디, 휴가유형, 휴가일수 - 사용일수, 등록일, 만료일, 0, ${year}, IDX
+			FROM REWARD
+			WHERE 
+				기준연도 = TO_CHAR(${year} - 1)
+				AND 휴가일수 > 사용일수
+				AND 만료일 >= ${year} || '0101'
+		`
+		const result = await db.select(conn, insert, {})
+
+		await db.commit(conn)
+		funcs.sendSuccess(res, result)
+	} catch (e) {
+		await db.rollback(conn)
+		console.error(e)
+		funcs.sendFail(res, e)
+	} finally {
+		db.close(conn)
+	}
+})
+
 module.exports = router

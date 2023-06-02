@@ -13,6 +13,7 @@
     "ejs": "~2.6.1",
     "express": "~4.16.1",
     "express-session": "^1.17.3",
+    "holiday-kr": "^0.1.5",
     "http-errors": "~1.6.3",
     "knex": "^2.3.0",
     "moment": "^2.29.4",
