@@ -263,7 +263,7 @@ router.get("/cnts", async (req, res, next) => {
 	}
 })
 
-/* 사이트 접속 (휴가 상세 목록) */
+/* 사이트 접속 (휴가 수) */
 router.patch("/cnt", async (req, res, next) => {
     let conn
 	try {

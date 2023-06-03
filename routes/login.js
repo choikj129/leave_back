@@ -14,7 +14,7 @@ router.post("/", async (req, res, next) => {
 		conn = await db.connection()
 		pw = crypto.pbkdf2Sync(req.body.pw, salt, 1, 64, "SHA512").toString("base64")
 		const sql = `
-			SELECT 아이디, 이름, 관리자코드, 직위코드, 직위
+			SELECT 아이디, 이름, 관리자여부, 직위코드, 직위
 			FROM EMP_POS E
 			WHERE 아이디 = :id AND 비밀번호 = :pw
 		`
@@ -28,7 +28,7 @@ router.post("/", async (req, res, next) => {
 				id: data.아이디,
 				name: data.이름,
 				position: data.직위,
-				isManager : data.관리자코드 == "Y" ? true : false,
+				isManager : data.관리자여부 == "Y" ? true : false,
 				isLogin : true,
 				isMobile : /mobile/i.test(userAgent),
 			}

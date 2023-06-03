@@ -12,7 +12,7 @@ router.get("/", async (req, res, next) => {
 		conn = await db.connection()
 		const sql = `
 			SELECT
-				E.아이디, E.이름, E.직위코드, E.직위, E.입사일, E.관리자코드, E.생년월일, E.음력여부,
+				E.아이디, E.이름, E.직위코드, E.직위, E.입사일, E.관리자여부, E.생일, E.음력여부,
 				:year 연도, LC.휴가수, 
 				NVL(LD.사용휴가수, 0) 사용휴가수,
 				NVL(LD.기타휴가수, 0) 기타휴가수,
@@ -81,17 +81,20 @@ router.patch("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const sql = `UPDATE EMP SET 직위코드 = :position, 입사일 = :date WHERE 아이디 = :id`
-		const birthDaySql = `
+		const updateEmp = `UPDATE EMP SET 직위코드 = :position, 입사일 = :date WHERE 아이디 = :id`
+		const updateBirthday = `
 			MERGE INTO BIRTHDAY USING DUAL
 				ON (아이디 = :id)
 			WHEN MATCHED THEN
-				UPDATE SET 생년월일 = :birthday
+				UPDATE SET 생일 = :birthday, 음력여부 = :isLunar
 			WHEN NOT MATCHED THEN
-				INSERT INTO (아이디, 생년월일)
-				VALUES (:id, :birthday)
+				INSERT (아이디, 생일, 음력여부)
+				VALUES (:id, :birthday, :isLunar)
 		`
-		const result = await db.update(conn, sql, req.body.userInfo)
+		const result = await db.multiUpdate(conn, {
+			updateEmp : {query : updateEmp, params : req.body},
+			updateBirthday : {query : updateBirthday, params : req.body}
+		})
 
 		await db.commit(conn)
 		funcs.sendSuccess(res, result)
@@ -182,8 +185,8 @@ router.patch("/supporter", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const updateOld = `UPDATE EMP SET 관리자코드 = 'N' WHERE 관리자코드 = 'K'`
-		const updateNew = `UPDATE EMP SET 관리자코드 = 'K' WHERE 아이디 = :id`
+		const updateOld = `UPDATE EMP SET 관리자여부 = 'N' WHERE 관리자여부 = 'K'`
+		const updateNew = `UPDATE EMP SET 관리자여부 = 'K' WHERE 아이디 = :id`
 		const result = await db.multiUpdate(conn, {
 			updateOld : {query : updateOld, params : {}},
 			updateNew : {query : updateNew, params : req.body},

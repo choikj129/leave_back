@@ -20,7 +20,7 @@ router.get("/holiday", async (req, res, next) => {
 		const holidayKey = rows[0].KEY
 		const url = `http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo?numOfRows=${numOfRows}&_type=${_type}&solYear=${year}&ServiceKey=${holidayKey}`
 		
-		let response = await axios.get(url, {
+		let holiday = await axios.get(url, {
 			headers : {
 				'Content-type': 'application/json;charset=UTF-8',
 				'Accept': '*/*'
@@ -28,7 +28,7 @@ router.get("/holiday", async (req, res, next) => {
 		})
 		
 		let name = ""
-		const params = response.data.response.body.items.item.filter(param => {
+		const params = holiday.data.response.body.items.item.filter(param => {
 			if (param.dateName == "대체공휴일") {
 				if (!param.dateName.endsWith(")")) param.dateName += `(${name})`
 			} else name = param.dateName
@@ -68,38 +68,6 @@ router.put("/carry-over", async (req, res, next) => {
 		미사용 & 만료 안 된 포상, 리프레시 휴가 이월	
 	*/
 	// const year = new Date().getFullYear()
-	const year = 2024
-	let conn
-	try {
-		conn = await db.connection()
-		const insert = `
-			INSERT INTO REWARD (
-				아이디, 휴가유형, 휴가일수, 등록일, 만료일, 사용일수, 기준연도, ROOT_IDX
-			)
-			SELECT 아이디, 휴가유형, 휴가일수 - 사용일수, 등록일, 만료일, 0, ${year}, IDX
-			FROM REWARD
-			WHERE 
-				기준연도 = TO_CHAR(${year} - 1)
-				AND 휴가일수 > 사용일수
-				AND 만료일 >= ${year} || '0101'
-		`
-		const result = await db.select(conn, insert, {})
-
-		await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch (e) {
-		await db.rollback(conn)
-		console.error(e)
-		funcs.sendFail(res, e)
-	} finally {
-		db.close(conn)
-	}
-})
-
-router.get("/birthDay", async (req, res, next) => {	
-	/* TO-DO
-		월 초 생일자 알람
-	*/
 	const year = 2024
 	let conn
 	try {

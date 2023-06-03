@@ -14,7 +14,7 @@ module.exports = {
         })
     },
     replaceQuery : (query, params) => {
-        /* 쿼리에 @key를 치환 */
+        /* 쿼리에 :key를 치환 */
         Object.entries(params).forEach((param) => {
             const key = param[0]
             let value = param[1]
