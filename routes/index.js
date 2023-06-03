@@ -76,36 +76,43 @@ router.get("/birthday", async (req, res, next) => {
 			let birthday = result.birthdays[i]
 			if (!birthday.생일) continue
 			if (birthday.음력여부 == 'N') {
+				let month = birthday.생일.substring(0, 2)
+				let day = birthday.생일.substring(2, 4)
 				for (let n=-1; n<2; n++) {
 					birthdays.push({
-						이름 : birthday.이름,
-						생일 : `${(year + n)}-${birthday.생일.substring(0, 2)}-${birthday.생일.substring(2, 4)}`,
+						내용 : `${birthday.이름} ${month}월 ${day}일 생일`,
+						생일 : `${(year + n)}-${month}-${day}`,
 						음력여부 : false
 					})
 				}
 			} else {
 				let month = birthday.생일.substring(0, 2)
 				let day = birthday.생일.substring(2, 4)
-				console.log(birthday.이름, birthday.음력여부)
 				for (let n=-1; n<2; n++) {
 					try {
 						let solar = await holidayKR.getSolar(year + n, month, day, true)
+						console.log(birthday.이름, solar, true)
 						let solarMonth = solar.month < 10 ? "0" + solar.month : solar.month.toString()
 						let solarDay = solar.dat < 10 ? "0" + solar.dat : solar.dat.toString()
 						birthdays.push({
-							이름 : birthday.이름,
+							내용 : `${birthday.이름} 음력 ${month}월 ${day}일 생일`,
 							생일 : `${solar.year}-${solarMonth}-${solarDay}`,
 							음력여부 : true,
 						})
 					} catch {
-						let solar = await holidayKR.getSolar(year + n, month, day, false)
-						let solarMonth = solar.month < 10 ? "0" + solar.month : solar.month.toString()
-						let solarDay = solar.day < 10 ? "0" + solar.day : solar.day.toString()
-						birthdays.push({
-							이름 : birthday.이름,
-							생일 : `${solar.year}-${solarMonth}-${solarDay}`,
-							음력여부 : true,
-						})
+						try {
+							let solar = await holidayKR.getSolar(year + n, month, day, false)
+							console.log(birthday.이름, solar, false)
+							let solarMonth = solar.month < 10 ? "0" + solar.month : solar.month.toString()
+							let solarDay = solar.day < 10 ? "0" + solar.day : solar.day.toString()
+							birthdays.push({
+								내용 : `${birthday.이름} 음력 ${month}월 ${day}일 생일`,
+								생일 : `${solar.year}-${solarMonth}-${solarDay}`,
+								음력여부 : true,
+							})
+						} catch {
+							console.log()
+						}
 					}
 				}
 			}
