@@ -22,7 +22,7 @@ router.get("/code", async (req, res, next) => {
 
 
 // 키 이름 수정
-router.post('/update', async (req, res, next) => {
+router.patch('/update', async (req, res, next) => {
 	const param = req.body
 	// 키 값 없을 시 실행 안함
 	if(param.key == undefined || param.key === ""){
