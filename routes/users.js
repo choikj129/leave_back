@@ -152,6 +152,20 @@ router.put("/", async (req, res, next) => {
 			date : req.body.date,
 		})
 
+		if (req.body.birthday) {
+			req.body.isLunar = req.body.isLunar ? "Y" : "N"
+			const birthdaySql = `
+				MERGE INTO BIRTHDAY USING DUAL
+					ON (아이디 = :id)
+				WHEN MATCHED THEN
+					UPDATE SET 생일 = :birthday, 음력여부 = :isLunar
+				WHEN NOT MATCHED THEN
+					INSERT (아이디, 생일, 음력여부)
+					VALUES (:id, :birthday, :isLunar)
+			`
+			await db.update(conn, birthdaySql, req.body)
+		}
+
 		await db.commit(conn)
 		result == 0 ? funcs.sendFail(res, "중복된 아이디입니다.") : funcs.sendSuccess(res, result)		
 	} catch(e) {
@@ -167,8 +181,12 @@ router.delete("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const sql = `DELETE FROM EMP WHERE 아이디 = :id`
-		const result = await db.select(conn, sql, {id : req.body.id})
+		const deleteEmp = `DELETE FROM EMP WHERE 아이디 = :id`
+		const deleteBirthday = `DELETE FROM BIRTHDAY WHERE 아이디 = :id`
+		const result = await db.multiUpdate(conn, {
+			emp : {query : deleteEmp, params : req.body},
+			birthday : {query : deleteBirthday, params : req.body},
+		})
 
 		await db.commit(conn)
 		funcs.sendSuccess(res, result)
