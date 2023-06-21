@@ -90,8 +90,8 @@ router.patch("/", async (req, res, next) => {
             UPDATE REWARD SET 사용일수 = 사용일수 - :cnt WHERE IDX = :idx
         `
         const historyInsert = `
-            INSERT INTO HISTORY (아이디, 내용)
-            VALUES (:id, :name)
+            INSERT INTO HISTORY (IDX, 아이디, 내용)
+            VALUES (SEQ_HISTORY.NEXTVAL, :id, :name)
         `
         let dbHash = {
             leaveInsert : {query : leaveInsert, params : []},

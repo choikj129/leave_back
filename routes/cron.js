@@ -74,9 +74,9 @@ router.put("/carry-over", async (req, res, next) => {
 		conn = await db.connection()
 		const insert = `
 			INSERT INTO REWARD (
-				아이디, 휴가유형, 휴가일수, 등록일, 만료일, 사용일수, 기준연도, ROOT_IDX
+				IDX, 아이디, 휴가유형, 휴가일수, 등록일, 만료일, 사용일수, 기준연도, ROOT_IDX
 			)
-			SELECT 아이디, 휴가유형, 휴가일수 - 사용일수, 등록일, 만료일, 0, ${year}, IDX
+			SELECT SEQ_REWARD.NEXTVAL, 아이디, 휴가유형, 휴가일수 - 사용일수, 등록일, 만료일, 0, ${year}, IDX
 			FROM REWARD
 			WHERE 
 				기준연도 = TO_CHAR(${year} - 1)

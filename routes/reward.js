@@ -34,9 +34,9 @@ router.put("/", async (req, res, next) => {
 		conn = await db.connection()
         const sql = `
             INSERT INTO REWARD (
-                아이디, 휴가유형, 휴가일수, 등록일, 만료일, 기준연도
+                IDX, 아이디, 휴가유형, 휴가일수, 등록일, 만료일, 기준연도
             ) VALUES (
-                :id, :type, :cnt, :date, TO_CHAR(ADD_MONTHS(TO_DATE(:date, 'YYYYMMDD'), 12)-1, 'YYYYMMDD'), :year
+                SEQ_REWARD.NEXTVAL, :id, :type, :cnt, :date, TO_CHAR(ADD_MONTHS(TO_DATE(:date, 'YYYYMMDD'), 12)-1, 'YYYYMMDD'), :year
             )
         `
 		const result = await db.update(conn, sql, req.body)
