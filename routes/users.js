@@ -35,7 +35,7 @@ router.get("/", async (req, res, next) => {
 						SUBSTR(휴가일, 0, 4) 연도,
 						SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, '포상', 0, '리프레시', 0, 1)) 사용휴가수,
 						SUM(DECODE(SUBSTR(휴가구분, 0, 2), '기타', 1, 0)) 기타휴가수
-					FROM LEAVE L, LEAVE_DETAIL LD
+					FROM LEAVE_SUMMARY L, LEAVE_DETAIL LD
 					WHERE 
 						L.IDX = LD.LEAVE_IDX
 						AND SUBSTR(휴가일, 0, 4) = :year

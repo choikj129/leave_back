@@ -21,7 +21,7 @@ router.get("/", async (req, res, next) => {
                     LD.휴가구분,
                     LD.기타휴가내용,
                     L.REWARD_IDX
-                FROM LEAVE L, LEAVE_DETAIL LD, EMP_POS E
+                FROM LEAVE_SUMMARY L, LEAVE_DETAIL LD, EMP_POS E
                 WHERE
                     L.아이디 = E.아이디
                     AND L.IDX = LD.LEAVE_IDX
@@ -38,7 +38,7 @@ router.get("/", async (req, res, next) => {
                     LD.휴가구분,
                     LD.기타휴가내용,
                     L.REWARD_IDX
-                FROM LEAVE L, LEAVE_DETAIL LD
+                FROM LEAVE_SUMMARY L, LEAVE_DETAIL LD
                 WHERE 
                     아이디 = :id 
                     AND L.IDX = LD.LEAVE_IDX
@@ -64,9 +64,9 @@ router.patch("/", async (req, res, next) => {
         const id = req.body.id
         const name = req.body.name
 
-        const seqSelect = "SELECT SEQ_LEAVE.NEXTVAL SEQ FROM LEAVE"
+        const seqSelect = "SELECT SEQ_LEAVE.NEXTVAL SEQ FROM DUAL"
         const leaveInsert = `
-            INSERT INTO LEAVE
+            INSERT INTO LEAVE_SUMMARY
             (IDX, 내용, 시작일, 종료일, 휴가일수, 아이디, REWARD_IDX)
             VALUES
             (:seq, :name, :startDate, :endDate, :cnt, :id, :updateReward)
@@ -78,7 +78,7 @@ router.patch("/", async (req, res, next) => {
             (SEQ_LEAVE_DETAIL.NEXTVAL, :seq, :ymd, :type, :etcType)
         `
         const leaveDelete = `
-            DELETE FROM LEAVE WHERE IDX = :idx
+            DELETE FROM LEAVE_SUMMARY WHERE IDX = :idx
         `
         const leaveDetailDelete = `
             DELETE FROM LEAVE_DETAIL WHERE LEAVE_IDX = :idx
@@ -109,7 +109,7 @@ router.patch("/", async (req, res, next) => {
             const seq = seqResult[0].SEQ
             dbHash.history.params.push({id : id, name : param.name})
             if (param.updateType == "I") {
-                /* LEAVE INSERT */                
+                /* LEAVE_SUMMARY INSERT */                
                 dbHash.leaveInsert.params.push({
                     seq: seq,
                     name: param.name,
@@ -135,7 +135,7 @@ router.patch("/", async (req, res, next) => {
                     date.setDate(date.getDate() + 1)
                 }
             } else if (param.updateType == "D") {
-                /* LEAVE & LEAVE_DETAIL DELETE */
+                /* LEAVE_SUMMARY & LEAVE_DETAIL DELETE */
                 dbHash.leaveDelete.params.push({idx : param.IDX})
                 dbHash.leaveDetailDelete.params.push({idx : param.IDX})
 
@@ -179,7 +179,7 @@ router.get("/lists", async (req, res, next) => {
         const dateSql = !req.query.isManager
         ? `
             SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
-            FROM LEAVE_DETAIL LD, LEAVE L
+            FROM LEAVE_DETAIL LD, LEAVE_SUMMARY L
             WHERE LD.LEAVE_IDX = L.IDX AND L.아이디 = :id
         `
         : `
@@ -195,7 +195,7 @@ router.get("/lists", async (req, res, next) => {
                 E.아이디,
                 SUBSTR(LD.휴가일, 0, 4) 연도,
                 DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
-            FROM LEAVE_DETAIL LD, LEAVE L, EMP E
+            FROM LEAVE_DETAIL LD, LEAVE_SUMMARY L, EMP E
             WHERE 
                 LD.LEAVE_IDX = L.IDX
                 AND E.아이디 = L.아이디
@@ -227,7 +227,7 @@ router.get("/cnts", async (req, res, next) => {
                 SELECT 연도,아이디 FROM LEAVE_CNT WHERE 아이디 = :id
                 UNION ALL
                 SELECT SUBSTR(휴가일, 0, 4) 연도, 아이디
-                FROM LEAVE L, LEAVE_DETAIL LD
+                FROM LEAVE_SUMMARY L, LEAVE_DETAIL LD
                 WHERE 
                     L.IDX = LD.LEAVE_IDX 
                     AND L.아이디 = :id
@@ -238,7 +238,7 @@ router.get("/cnts", async (req, res, next) => {
                     아이디,
                     SUBSTR(휴가일, 0, 4) 연도,
                     SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, '포상', 0, '리프', 0, 1)) 사용휴가수
-                FROM LEAVE L, LEAVE_DETAIL LD
+                FROM LEAVE_SUMMARY L, LEAVE_DETAIL LD
                 WHERE 
                     L.IDX = LD.LEAVE_IDX 
                     AND L.아이디 = :id
