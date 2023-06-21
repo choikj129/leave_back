@@ -1,6 +1,7 @@
 let express = require("express")
 let router = express.Router()
 let db = require("../exports/oracle")
+let holidayKey = require("../exports/config/apiKey").holiday
 let funcs = require("../exports/functions")
 let today = new Date()
 const axios = require("axios")
@@ -10,14 +11,12 @@ router.get("/holiday", async (req, res, next) => {
 	// 공휴일 api키 가져오기
 	let conn
 	try {
-		conn = await db.connection()
-		const selectCode = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y'`
-		const rows = await db.select(conn, selectCode, {})
+		// const selectCode = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y'`
+		// const rows = await db.select(conn, selectCode, {})
 
 		const year = !req.query.year ? today.getFullYear() : req.query.year
 		const numOfRows = '100'
 		const _type = 'json'
-		const holidayKey = rows[0].KEY
 		const url = `http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo?numOfRows=${numOfRows}&_type=${_type}&solYear=${year}&ServiceKey=${holidayKey}`
 		
 		let holiday = await axios.get(url, {
