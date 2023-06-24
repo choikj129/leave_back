@@ -5,6 +5,7 @@ let moment = require("moment")
 let path = require("path")
 let cookieParser = require("cookie-parser")
 let morgan = require("morgan")
+let helmet = require("helmet");
 let interceptor = require("./exports/interceptor")
 
 
@@ -25,6 +26,9 @@ app.set("view engine", "ejs")
 morgan.format("dateTime", (req, res) => {
   return moment().format("YYYY-MM-DD HH:mm:ss")
 })
+
+app.use(helmet())
+app.use(helmet.xssFilter())
 app.use(morgan("[:dateTime] :method :url :status"))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
@@ -67,6 +71,10 @@ app.use("/holiday", holidayRouter)
 app.use((req, res, next) => {
   next(createError(404))
 })
+
+app.get((req,res)=>{
+	res.status(404).send('not found');
+});
 
 // error handler
 app.use((err, req, res, next) => {
