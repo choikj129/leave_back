@@ -1,17 +1,37 @@
+let crypto = require("crypto")
+let salt = require("./config/crypto")
+
+const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 module.exports = {
+    /* create crypto salt */
+    createSalt : () => {        
+        return crypto.randomBytes(64).toString('base64')
+    },
+    /* encrypt password */
+    encrypt : (key) => {
+        return crypto.pbkdf2Sync(key, salt, 1, 64, "SHA512").toString("base64")
+    },
     sendFail : (res, msg) => {
-        res.json({
-            status: false,
-            msg: `[${res.req._parsedOriginalUrl.path}] ${msg}`,
-            data: []
-        })
+        try {
+            res.json({
+                status: false,
+                msg: `[${res.req._parsedOriginalUrl.path}] ${msg}`,
+                data: []
+            })
+        } catch(e) {
+            console.error(e)
+        }
     },
     sendSuccess : (res, data=[], msg="") => {
-        res.json({
-            status: true,
-            msg: `[${res.req._parsedOriginalUrl.path}] ${msg}`,
-            data: data
-        })
+        try {
+            res.json({
+                status: true,
+                msg: `[${res.req._parsedOriginalUrl.path}] ${msg}`,
+                data: data
+            })
+        } catch(e) {
+            console.error(e)
+        }
     },
     replaceQuery : (query, params) => {
         /* 쿼리에 :key를 치환 */
@@ -39,5 +59,16 @@ module.exports = {
         })
 
         return returnParams
-    }
+    },
+    /* 랜덤 문자열 생성 */
+    randomChar : (length = 10) => {
+        let result = ""        
+
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length)
+            result += characters.charAt(randomIndex)
+        }
+
+        return result
+    },
 }
