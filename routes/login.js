@@ -1,10 +1,10 @@
 let express = require("express")
 let router = express.Router()
-let crypto = require("crypto")
 let db = require("../exports/oracle")
+let kakaowork = require("../exports/kakaowork")
 let funcs = require("../exports/functions")
-let salt = require("../exports/config/crypto")
 
+const updatePWSql = "UPDATE EMP SET 비밀번호 = :pw WHERE 아이디 = :id"
 
 router.post("/", async (req, res, next) => {
 	const userAgent = req.get('User-Agent')
@@ -12,7 +12,7 @@ router.post("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		pw = crypto.pbkdf2Sync(req.body.pw, salt, 1, 64, "SHA512").toString("base64")
+		const pw = funcs.encrypt(req.body.pw)		
 		const sql = `
 			SELECT 아이디, 이름, 관리자여부, 직위코드, 직위
 			FROM EMP_POS E
@@ -37,6 +37,7 @@ router.post("/", async (req, res, next) => {
 		}
 	} catch (e) {
 		funcs.sendFail(res, e)
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -47,10 +48,9 @@ router.patch("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		pw = crypto.pbkdf2Sync(req.body.pw, salt, 1, 64, "SHA512").toString("base64")
-		const sql = `UPDATE EMP SET 비밀번호 = :pw WHERE 아이디 = :id`
+		const pw = funcs.encrypt(req.body.pw)		
 		const params = { id: req.body.id, pw: pw }
-		const result = await db.update(conn, sql, params)
+		const result = await db.update(conn, updatePWSql, params)
 
 		await db.commit(conn)
 		funcs.sendSuccess(res, result)

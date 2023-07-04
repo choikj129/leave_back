@@ -30,11 +30,11 @@ router.patch('/update', async (req, res, next) => {
 		return
 	}
 	const sql = `
-                    UPDATE CODE SET
-						표시내용 = :key
-					WHERE
-					코드구분 = '공공데이터키'
-                `
+		UPDATE CODE SET
+			표시내용 = :key
+		WHERE
+		코드구분 = '공공데이터키'
+	`
 	const updParam = {key:param.key}
 	let conn
 	try {

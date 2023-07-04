@@ -55,7 +55,6 @@ module.exports = {
             console.error("==========================================================")
             console.error(query)
             console.error("==========================================================")
-            console.error(e)
             throw new Error("DB select error")
         }
     },
@@ -84,7 +83,6 @@ module.exports = {
             console.error("==========================================================")
             console.error(hash[key].query)
             console.error("==========================================================")
-            console.error(e)
             throw new Error("DB multi select error")
         }
         
@@ -101,7 +99,6 @@ module.exports = {
             console.error("==========================================================")
             console.error(query)
             console.error("==========================================================")
-            console.error(e)
             throw new Error("DB update error")
         }        
     },
@@ -130,7 +127,6 @@ module.exports = {
             console.error("==========================================================")
             console.error(hash[key].query)
             console.error("==========================================================")
-            console.error(e)
             throw new Error("DB multi update error")
         }
         
@@ -152,7 +148,6 @@ module.exports = {
                 console.error("==========================================================")
                 console.error(query)
                 console.error("==========================================================")
-                console.error(e)
                 throw new Error("DB update bulk error")
             }
         }else {
@@ -184,7 +179,6 @@ module.exports = {
             console.error("==========================================================")
             console.error(hash[key].query)
             console.error("==========================================================")
-            console.error(e)
             throw new Error("DB multi update bulk error")
         }
     },

@@ -71,6 +71,7 @@ router.get("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		funcs.sendFail(res, e)
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -101,6 +102,7 @@ router.patch("/", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -126,6 +128,7 @@ router.get("/history", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		funcs.sendFail(res, e)
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -171,6 +174,7 @@ router.put("/", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -193,6 +197,7 @@ router.delete("/", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -215,6 +220,7 @@ router.patch("/supporter", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
