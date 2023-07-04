@@ -23,12 +23,12 @@ module.exports = {
             if (!res.data.success) {
                 return false
             }
-            return res.data.user.id
+            return res.data.conversation.id
         })
     },
-    sendMessage : async (contents) => {
+    sendMessage : async (contents, convId = conversationId) => {
         return await axios.post("/messages.send", {
-            "conversation_id" : conversationId,
+            "conversation_id" : convId,
             "text" : contents
         }).then((res) => {
             if (!res.data.success) {
