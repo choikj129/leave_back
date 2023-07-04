@@ -48,7 +48,7 @@ app.use((req, res, next) => {
   const isSession = interceptor.session(req)
   console.log(req._parsedOriginalUrl.path)
   if (isSession 
-    || req._parsedOriginalUrl.path == "/login" 
+    || req._parsedOriginalUrl.path.startsWith("/login")
     || req._parsedOriginalUrl.path.startsWith("/cron")
     || req._parsedOriginalUrl.path.endsWith("/test")
   ) {
