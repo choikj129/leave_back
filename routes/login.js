@@ -56,8 +56,58 @@ router.patch("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		await db.rollback(conn)
-
 		funcs.sendFail(res, e)
+		console.error(e)
+	} finally {
+		db.close(conn)
+	}
+})
+
+/* 비밀번호 초기화 */
+router.patch("/reset", async (req, res, next) => {
+	let conn
+	try {
+		conn = await db.connection()
+
+		const sql = `
+			SELECT :id || '@' || 표시내용 이메일
+			FROM EMP, (SELECT 표시내용 FROM CODE WHERE 사용여부 = 'Y' AND 코드구분 = '이메일' AND 코드명 = 0) C
+			WHERE 
+				아이디 = :id
+				AND 이름 = :name
+		`
+		let params = { id : req.body.id, name : req.body.name }
+		const result = await db.select(conn, sql, params)
+		
+		if (result.length == 0) {
+			funcs.sendFail(res, "사용자가 존재하지 않습니다.")
+			return
+		}
+		const email = result[0].이메일
+		const userId = await kakaowork.getUserId(email)
+		if (!userId) {
+			funcs.sendFail(res, `카카오워크 이메일(${email})을 찾을 수 없습니다.`)
+			return
+		}
+		const convId = await kakaowork.conversationOpen(userId)
+		if (!convId) {
+			funcs.sendFail(res, "카카오워크를 전송 오류.")
+			return
+		}
+		
+		const key = funcs.randomChar()
+		const pw = funcs.encrypt(key)
+		params.pw = pw
+		await db.update(conn, updatePWSql, params)
+
+		await kakaowork.sendMessage(`휴가웹 임시 비밀번호\n${key}`, convId)
+		
+		await db.commit(conn)
+		funcs.sendSuccess(res, [], "임시 비밀번호를 카카오워크로 전송했습니다.")
+	} catch(e) {
+		await db.rollback(conn)
+		funcs.sendFail(res, e)
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
