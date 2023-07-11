@@ -1,5 +1,6 @@
 let express = require("express")
 let router = express.Router()
+let log4j = require("../exports/log4j")
 let path = require("path")
 let db = require("../exports/oracle")
 let funcs = require("../exports/functions")
@@ -8,7 +9,7 @@ const holidayKR = require("holiday-kr")
 router.get("/logout", (req, res, next) => {
 	req.session.destroy((err) => {
 		if (err) {
-			console.error(err)
+			log4j.log(err, "ERROR")
 			funcs.sendFail(res, "Logout session destroy Error")
 		} else {
 			funcs.sendSuccess(res)
@@ -26,7 +27,7 @@ router.get("/download", (req, res, next) => {
 		
 	res.download(path.resolve(file), fileName, (result, err) => {
 		if (err) {
-			console.error(err)
+			log4j.log(err, "ERROR")
 		}
 	})
 })
@@ -38,7 +39,7 @@ router.get("/code", async (req, res, next) => {
 		const sort = req.query.reverse != undefined && req.query.reverse ? "DESC" : "ASC"
 		const sql = `
 			SELECT 코드명, 표시내용 
-			FROM CODE 
+			FROM CODE
 			WHERE 코드구분 = :name AND 사용여부 = 'Y' 
 			ORDER BY 코드명 ${sort}
 		`
@@ -46,7 +47,7 @@ router.get("/code", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -110,7 +111,7 @@ router.get("/birthday", async (req, res, next) => {
 		}		
 		funcs.sendSuccess(res, birthdays)
 	} catch (e) {
-		console.error(e)
+		log4j.log(e, "ERROR")
 		funcs.sendFail(res, e)
 	} finally {
 		db.close(conn)
@@ -125,7 +126,7 @@ router.post("/test", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}

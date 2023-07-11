@@ -1,9 +1,8 @@
 var express = require("express")
 var router = express.Router()
-let crypto = require("crypto")
+let log4j = require("../exports/log4j")
 let db = require("../exports/oracle")
 let funcs = require("../exports/functions")
-let salt = require("../exports/config/crypto")
 
 /* 사이트 관리자 접속 (직원 정보) */
 router.get("/", async (req, res, next) => {
@@ -71,7 +70,7 @@ router.get("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -102,7 +101,7 @@ router.patch("/", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -128,7 +127,7 @@ router.get("/history", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -174,7 +173,7 @@ router.put("/", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -197,7 +196,7 @@ router.delete("/", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -220,7 +219,7 @@ router.patch("/supporter", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}

@@ -1,5 +1,6 @@
 let express = require("express")
 let router = express.Router()
+let log4j = require("../exports/log4j")
 let db = require("../exports/oracle")
 let holidayKey = require("../exports/config/apiKey").holiday
 let funcs = require("../exports/functions")
@@ -55,7 +56,7 @@ router.get("/holiday", async (req, res, next) => {
 
 	} catch (e){
 		await db.rollback(conn)
-		console.error(e)
+		log4j.log(e, "ERROR")
 		funcs.sendFail(res, e)
 	} finally {
 		db.close(conn)
@@ -88,7 +89,7 @@ router.put("/carry-over", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		await db.rollback(conn)
-		console.error(e)
+		log4j.log(e, "ERROR")
 		funcs.sendFail(res, e)
 	} finally {
 		db.close(conn)

@@ -1,5 +1,6 @@
 let crypto = require("crypto")
 let salt = require("./config/crypto")
+let log4j = require("./log4j")
 
 const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 module.exports = {
@@ -19,7 +20,7 @@ module.exports = {
                 data: []
             })
         } catch(e) {
-            console.error(e)
+            log4j.log(e, "ERROR")
         }
     },
     sendSuccess : (res, data=[], msg="") => {
@@ -30,7 +31,7 @@ module.exports = {
                 data: data
             })
         } catch(e) {
-            console.error(e)
+            log4j.log(e, "ERROR")
         }
     },
     replaceQuery : (query, params) => {

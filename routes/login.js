@@ -1,15 +1,15 @@
 let express = require("express")
 let router = express.Router()
+let log4j = require("../exports/log4j")
 let db = require("../exports/oracle")
 let kakaowork = require("../exports/kakaowork")
 let funcs = require("../exports/functions")
 
 const updatePWSql = "UPDATE EMP SET 비밀번호 = :pw WHERE 아이디 = :id"
 
-router.post("/", async (req, res, next) => {
-	const userAgent = req.get('User-Agent')
-	console.log(`User-Agent : ${userAgent}`)
+router.post("/", async (req, res, next) => {	
 	let conn
+	const userAgent = req.get('User-Agent')
 	try {
 		conn = await db.connection()
 		const pw = funcs.encrypt(req.body.pw)		
@@ -35,9 +35,10 @@ router.post("/", async (req, res, next) => {
 
 			funcs.sendSuccess(res, req.session.user)
 		}
+		log4j.log(`(${req.body.id}) - User-Agent : ${userAgent}`, "INFO")
 	} catch (e) {
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -57,7 +58,7 @@ router.patch("/", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -107,7 +108,7 @@ router.patch("/reset", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}

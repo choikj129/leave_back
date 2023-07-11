@@ -1,5 +1,6 @@
-var express = require('express')
-var router = express.Router()
+let express = require("express")
+let router = express.Router()
+let log4j = require("../exports/log4j")
 const db = require("../exports/oracle")
 const funcs = require("../exports/functions")
 
@@ -13,7 +14,7 @@ router.get("/code", async (req, res, next) => {
 			funcs.sendSuccess(res, rows)
 		} catch (e){
 			db.rollback(conn)
-			console.error(e)
+			log4j.log(e, "ERROR")
 			funcs.sendFail(res, e)
 		} finally {
 			db.close(conn)
@@ -44,7 +45,7 @@ router.patch('/update', async (req, res, next) => {
 		funcs.sendSuccess(res, rows)
 	} catch (e){
 		await db.rollback(conn)
-		console.error(e)
+		log4j.log(e, "ERROR")
 		funcs.sendFail(res, e)
 	} finally {
 		db.close(conn)

@@ -11,9 +11,10 @@ module.exports = {
             }
         */
         if (!req.session.user) {
+            global.userSession = null;
             return false
         }
-        
+        global.userSession = req.session.user
         return true
     },
 }

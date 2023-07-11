@@ -4,7 +4,8 @@ let session = require("express-session")
 let moment = require("moment")
 let path = require("path")
 let cookieParser = require("cookie-parser")
-let morgan = require("morgan")
+// let morgan = require("morgan")
+let log4j = require("./exports/log4j")
 let helmet = require("helmet");
 let interceptor = require("./exports/interceptor")
 
@@ -23,13 +24,13 @@ let app = express()
 app.set("views", path.join(__dirname, "views"))
 app.set("view engine", "ejs")
 
-morgan.format("dateTime", (req, res) => {
-  return moment().format("YYYY-MM-DD HH:mm:ss")
-})
+// morgan.format("dateTime", (req, res) => {
+//   return moment().format("YYYY-MM-DD HH:mm:ss")
+// })
 
 app.use(helmet())
 app.use(helmet.xssFilter())
-app.use(morgan("[:dateTime] :method :url :status"))
+// app.use(morgan("[:dateTime] :method :url :status"))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
@@ -46,7 +47,7 @@ app.use(
 
 app.use((req, res, next) => {
   const isSession = interceptor.session(req)
-  console.log(req._parsedOriginalUrl.path)
+  log4j.log(`${req.method} ${req._parsedOriginalUrl.path}`, "INFO")
   if (isSession 
     || req._parsedOriginalUrl.path.startsWith("/login")
     || req._parsedOriginalUrl.path.startsWith("/cron")

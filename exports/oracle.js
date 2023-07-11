@@ -1,4 +1,5 @@
 let db = require("oracledb")
+let log4j = require("./log4j")
 let config = require("./config/db_connect")
 let funcs = require("./functions");
 const path = require("./config/clientPath")
@@ -25,7 +26,7 @@ db.createPool({
     poolMax : 10,
 }, (err, conn) => {
     if (err) {
-        console.error("createPool() error: " + err.message);
+        log4j.log("createPool() error: " + err.message, "ERROR")
         return;
     }
     pool = conn
@@ -36,7 +37,7 @@ module.exports = {
         try {
             return await pool.getConnection()
                 .then((connection) => {
-                    console.log("DB connection success")
+                    log4j.log("DB connection success", "INFO")
                     return connection
                 })
         } catch (e) {
@@ -48,13 +49,13 @@ module.exports = {
         try {
             return await conn.execute(query, {})
                 .then(result => {
-                    console.log("DB select success")
+                    log4j.log("DB select success", "INFO")
                     return result.rows
                 })
         } catch(e) {
-            console.error("==========================================================")
-            console.error(query)
-            console.error("==========================================================")
+            log4j.log("==========================================================", "ERROR")
+            log4j.log(query, "ERROR")
+            log4j.log("==========================================================", "ERROR")
             throw new Error("DB select error")
         }
     },
@@ -77,12 +78,12 @@ module.exports = {
                         returnData[key] = result.rows
                     })
             }
-            console.log("DB multi select success")
+            log4j.log("DB multi select success", "INFO")
             return returnData
         } catch(e) {
-            console.error("==========================================================")
-            console.error(hash[key].query)
-            console.error("==========================================================")
+            log4j.log("==========================================================", "ERROR")
+            log4j.log(hash[key].query, "ERROR")
+            log4j.log("==========================================================", "ERROR")
             throw new Error("DB multi select error")
         }
         
@@ -92,13 +93,13 @@ module.exports = {
         try {
             return await conn.execute(query, {})
                 .then(result => {
-                    console.log("DB update success")
+                    log4j.log("DB update success", "INFO")
                     return result.rowsAffected
                 })
         } catch(e) {
-            console.error("==========================================================")
-            console.error(query)
-            console.error("==========================================================")
+            log4j.log("==========================================================", "ERROR")
+            log4j.log(query, "ERROR")
+            log4j.log("==========================================================", "ERROR")
             throw new Error("DB update error")
         }        
     },
@@ -121,12 +122,12 @@ module.exports = {
                         returnData[key] = result.rowsAffected
                     })
             }
-            console.log("DB multi update success")
+            log4j.log("DB multi update success", "INFO")
             return returnData
         } catch(e) {
-            console.error("==========================================================")
-            console.error(hash[key].query)
-            console.error("==========================================================")
+            log4j.log("==========================================================", "ERROR")
+            log4j.log(hash[key].query, "ERROR")
+            log4j.log("==========================================================", "ERROR")
             throw new Error("DB multi update error")
         }
         
@@ -141,17 +142,17 @@ module.exports = {
             try {
                 return await conn.executeMany(query, params)
                     .then(result => {                    
-                        console.log("DB update bulk success")
+                        log4j.log("DB update bulk success", "INFO")
                         return result.rowsAffected
                     })
             } catch (e) {
-                console.error("==========================================================")
-                console.error(query)
-                console.error("==========================================================")
+                log4j.log("==========================================================", "ERROR")
+                log4j.log(query, "ERROR")
+                log4j.log("==========================================================", "ERROR")
                 throw new Error("DB update bulk error")
             }
         }else {
-            console.log("No params data [update bulk]")
+            log4j.log("No params data [update bulk]", "INFO")
             return []
         }
     },
@@ -173,37 +174,37 @@ module.exports = {
                     returnData[key] = 0
                 }
             }
-            console.log("DB multi update bulk success")
+            log4j.log("DB multi update bulk success", "INFO")
             return returnData
         } catch(e) {
-            console.error("==========================================================")
-            console.error(hash[key].query)
-            console.error("==========================================================")
+            log4j.log("==========================================================", "ERROR")
+            log4j.log(hash[key].query, "ERROR")
+            log4j.log("==========================================================", "ERROR")
             throw new Error("DB multi update bulk error")
         }
     },
     close: (conn) => {
         try {
-            console.log("DB Close")
+            log4j.log("DB Close", "INFO")
             conn.close()
         } catch {
-            console.error("Invalid connection")
+            log4j.log("Invalid connection", "ERROR")
         }
     },
     commit: async (conn) => {
         try {
-            console.log("DB commit")
+            log4j.log("DB commit", "INFO")
             await conn.commit()
         } catch {
-            console.error("Commit error")
+            log4j.log("Commit error", "ERROR")
         }
     },
     rollback: async (conn) => {
         try {
-            console.log("DB rollback")
+            log4j.log("DB rollback", "INFO")
             await conn.rollback()
         } catch {
-            console.error("Rollback error")
+            log4j.log("Rollback error", "ERROR")
         }
     },
 }

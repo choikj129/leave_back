@@ -1,5 +1,6 @@
 let express = require("express")
 let router = express.Router()
+let log4j = require("../exports/log4j")
 let db = require("../exports/oracle")
 let funcs = require("../exports/functions")
 
@@ -9,10 +10,13 @@ router.get("/", async (req, res, next) => {
 	try {
 		conn = await db.connection()
 		const sql = `
-			SELECT 명칭, TO_CHAR(TO_DATE(MIN(날짜), 'YYYYMMDD'), 'YYYY-MM-DD') 시작일, TO_CHAR(TO_DATE(MAX(날짜), 'YYYYMMDD'), 'YYYY-MM-DD') 종료일, 수동여부
+			SELECT 
+				명칭,
+				수동여부,
+				TO_CHAR(TO_DATE(MIN(날짜), 'YYYYMMDD'), 'YYYY-MM-DD') 시작일,
+				TO_CHAR(TO_DATE(MAX(날짜), 'YYYYMMDD'), 'YYYY-MM-DD') 종료일
 			FROM HOLIDAY
-			WHERE
-				날짜 LIKE :year || '%'
+			WHERE 날짜 LIKE :year || '%'
 			GROUP BY 명칭, 수동여부
 			ORDER BY 시작일
 		`
@@ -20,7 +24,7 @@ router.get("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -41,7 +45,7 @@ router.get("/detail", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -61,7 +65,7 @@ router.put("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -83,7 +87,7 @@ router.delete("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		console.error(e)
+		log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}

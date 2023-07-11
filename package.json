@@ -17,6 +17,7 @@
     "holiday-kr": "^0.1.5",
     "http-errors": "~1.6.3",
     "knex": "^2.3.0",
+    "log4js": "^6.9.1",
     "moment": "^2.29.4",
     "morgan": "~1.9.1",
     "nodemon": "^2.0.20",

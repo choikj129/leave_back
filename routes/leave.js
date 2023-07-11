@@ -1,5 +1,6 @@
 let express = require("express")
 let router = express.Router()
+let log4j = require("../exports/log4j")
 let db = require("../exports/oracle")
 let funcs = require("../exports/functions")
 let kakaowork = require("../exports/kakaowork")
@@ -51,7 +52,7 @@ router.get("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		funcs.sendFail(res, e)
-        console.error(e)
+        log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -166,7 +167,7 @@ router.patch("/", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-        console.error(e)
+        log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -213,7 +214,7 @@ router.get("/lists", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		funcs.sendFail(res, e)
-        console.error(e)
+        log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -261,7 +262,7 @@ router.get("/cnts", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		funcs.sendFail(res, e)
-        console.error(e)
+        log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
@@ -286,7 +287,7 @@ router.patch("/cnt", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-        console.error(e)
+        log4j.log(e, "ERROR")
 	} finally {
 		db.close(conn)
 	}
