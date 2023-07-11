@@ -11,7 +11,7 @@ const conf = {
             keepFileExt: true,
             layout: {
                 type: 'pattern',
-                pattern: '[%d{yyyy-MM-dd hh:mm:ss.SSS}] %m%n',
+                pattern: '[%d{yyyy-MM-dd hh:mm:ss.SSS}] %m',
             },
         },
     },
