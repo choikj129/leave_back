@@ -59,16 +59,7 @@ router.delete("/", async (req, res, next) => {
     let conn
 	try {
 		conn = await db.connection()
-        const sql = `
-            MERGE INTO REWARD R USING DUAL
-                ON (
-                    R.사용일수 = 0 AND 
-                    R.IDX = :idx
-                )
-            WHEN MATCHED THEN
-                UPDATE SET R.휴가일수 = -1 WHERE IDX = :idx
-                DELETE WHERE IDX = :idx
-        `
+        const sql = `DELETE FROM REWARD WHERE IDX = :idx AND 사용일수 = 0`
 		const result = await db.update(conn, sql, req.body)
 
         await db.commit(conn)
