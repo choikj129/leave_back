@@ -7,7 +7,7 @@ const conf = {
         file: {
             type: 'dateFile',
             filename: `${path}/leave_back.log`,
-            pattern: '.yyyy-MM-dd',
+            pattern: 'yyyy-MM-dd',
             keepFileExt: true,
             layout: {
                 type: 'pattern',
