@@ -225,4 +225,30 @@ router.patch("/supporter", async (req, res, next) => {
 	}
 })
 
+/* 엑셀 직원 추가 */
+router.post("/insertExcelUsers", async (req, res, next) => {
+	let conn
+	try {
+		conn = await db.connection();
+		const insertUserBulk = 'INSERT INTO EMP (아이디, 이름, 직위코드, 입사일) VALUES (:아이디, :이름, :직위코드, :입사일)'
+		const insertBirthDayBulk = 'INSERT INTO BIRTHDAY (아이디, 생일, 음력여부) VALUES (:아이디, :생일, :음력여부)';
+		const insertLeaveCntBulk = 'INSERT INTO LEAVE_CNT (아이디, 연도, 휴가수) VALUES (:아이디, :연도, :휴가수)'
+
+		const result = await db.multiUpdateBulk(conn, {
+			insertUsers : {query : insertUserBulk, params: req.body}, 
+			insertBirthday : {query : insertBirthDayBulk, params: req.body}, 
+			insertLeaveCnt : {query : insertLeaveCntBulk, params: req.body}, 
+		})
+
+		await db.commit(conn);
+		funcs.sendSuccess(res, result);
+	} catch(e) {
+		await db.rollback(conn)
+		funcs.sendFail(res, e)
+		log4j.log(e, "ERROR")
+	} finally {
+		db.close(conn)
+	}
+});
+
 module.exports = router
