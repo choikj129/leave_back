@@ -229,10 +229,22 @@ router.patch("/supporter", async (req, res, next) => {
 router.post("/insertExcelUsers", async (req, res, next) => {
 	let conn
 	try {
+		const requestUsersSize = req.body.length
 		conn = await db.connection();
-		const insertUserBulk = 'INSERT INTO EMP (아이디, 이름, 직위코드, 입사일) VALUES (:아이디, :이름, :직위코드, :입사일)'
-		const insertBirthDayBulk = 'INSERT INTO BIRTHDAY (아이디, 생일, 음력여부) VALUES (:아이디, :생일, :음력여부)';
-		const insertLeaveCntBulk = 'INSERT INTO LEAVE_CNT (아이디, 연도, 휴가수) VALUES (:아이디, :연도, :휴가수)'
+		const insertUserBulk = 'MERGE INTO EMP '
+							 + 'USING DUAL ON (아이디 = :아이디)'
+							 + 'WHEN NOT MATCHED THEN '
+							 + 'INSERT (아이디, 이름, 직위코드, 입사일) VALUES (:아이디, :이름, :직위코드, :입사일)'
+
+		const insertBirthDayBulk = 'MERGE INTO BIRTHDAY '
+								 + 'USING DUAL ON (아이디 = :아이디) '
+								 + 'WHEN NOT MATCHED THEN '
+								 + 'INSERT (아이디, 생일, 음력여부) VALUES (:아이디, :생일, :음력여부)'
+
+		const insertLeaveCntBulk = 'MERGE INTO LEAVE_CNT '
+								 + 'USING DUAL ON (아이디 = :아이디) '
+								 + 'WHEN NOT MATCHED THEN '
+								 + 'INSERT (아이디, 연도, 휴가수) VALUES (:아이디, :연도, :휴가수)'
 
 		const result = await db.multiUpdateBulk(conn, {
 			insertUsers : {query : insertUserBulk, params: req.body}, 
@@ -240,7 +252,15 @@ router.post("/insertExcelUsers", async (req, res, next) => {
 			insertLeaveCnt : {query : insertLeaveCntBulk, params: req.body}, 
 		})
 
+		const acceptUsersSize = result.insertUsers
+
 		await db.commit(conn);
+
+		if (acceptUsersSize != requestUsersSize) {
+			funcs.sendFail(res, `\n입력 직원 수 = ${requestUsersSize}\nDB 인입 성공 건수 = ${acceptUsersSize}\n사유 : 중복아이디 혹은 기타 알 수 없는 이유`)
+			return
+		}
+
 		funcs.sendSuccess(res, result);
 	} catch(e) {
 		await db.rollback(conn)
