@@ -19,10 +19,7 @@ router.get("/logout", (req, res, next) => {
 
 router.get("/download", (req, res, next) => {
 	const filePath = `${__dirname}/../public/files/`
-	let fileName = "어다인_휴가관리_사용자_매뉴얼.pdf"
-	if (req.session.user.isManager) {
-			fileName = "어다인_휴가관리_관리자_매뉴얼.pdf"
-		}
+	let fileName = req.query.fileName
 	const file = filePath + fileName
 		
 	res.download(path.resolve(file), fileName, (result, err) => {
