@@ -274,11 +274,16 @@ router.patch("/cnt", async (req, res, next) => {
 	try {
 		conn = await db.connection()
         const sql = `
-            UPDATE LEAVE_CNT
-            SET 휴가수 = :cnt
-            WHERE
-                아이디 = :id
-                AND 연도 = :year
+            MERGE INTO LEAVE_CNT USING DUAL
+                ON (
+                    아이디 = :id
+					AND 연도 = :year
+                )
+			WHEN MATCHED THEN
+				UPDATE SET 휴가수 = :cnt
+            WHEN NOT MATCHED THEN
+				INSERT (아이디, 연도, 휴가수)
+				VALUES (:id, :year, :cnt)
         `
 		const result = await db.select(conn, sql, req.body)
 
