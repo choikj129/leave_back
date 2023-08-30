@@ -53,7 +53,9 @@ app.use(
 		secret: "odinue",
 		resave: false,
 		saveUninitialized: true,
-		maxAge: 24 * 60 * 60 * 1000   // 세션 유지 기간 : 하루
+    cookie : {
+  		maxAge: 24 * 60 * 60 * 1000,   // 세션 유지 기간 : 하루
+    },
 	})
 )
 
