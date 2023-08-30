@@ -44,7 +44,7 @@ router.get("/code", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -108,7 +108,7 @@ router.get("/birthday", async (req, res, next) => {
 		}		
 		funcs.sendSuccess(res, birthdays)
 	} catch (e) {
-		log4j.log(e, "ERROR")
+		console.error(e)
 		funcs.sendFail(res, e)
 	} finally {
 		db.close(conn)
@@ -123,7 +123,7 @@ router.post("/test", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch(e) {
 		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}

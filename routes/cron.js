@@ -56,7 +56,7 @@ router.get("/holiday", async (req, res, next) => {
 
 	} catch (e){
 		await db.rollback(conn)
-		log4j.log(e, "ERROR")
+		console.error(e)
 		funcs.sendFail(res, e)
 	} finally {
 		db.close(conn)
@@ -89,7 +89,7 @@ router.put("/carry-over", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		await db.rollback(conn)
-		log4j.log(e, "ERROR")
+		console.error(e)
 		funcs.sendFail(res, e)
 	} finally {
 		db.close(conn)

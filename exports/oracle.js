@@ -41,6 +41,7 @@ module.exports = {
                     return connection
                 })
         } catch (e) {
+            console.log(e)
             throw new Error("DB connection error")
         }
     },    

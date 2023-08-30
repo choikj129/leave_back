@@ -24,7 +24,7 @@ router.get("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -45,7 +45,7 @@ router.get("/detail", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -65,7 +65,7 @@ router.put("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -87,7 +87,7 @@ router.delete("/", async (req, res, next) => {
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}

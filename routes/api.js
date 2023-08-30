@@ -14,7 +14,7 @@ router.get("/code", async (req, res, next) => {
 			funcs.sendSuccess(res, rows)
 		} catch (e){
 			db.rollback(conn)
-			log4j.log(e, "ERROR")
+			console.error(e)
 			funcs.sendFail(res, e)
 		} finally {
 			db.close(conn)
@@ -45,7 +45,7 @@ router.patch('/update', async (req, res, next) => {
 		funcs.sendSuccess(res, rows)
 	} catch (e){
 		await db.rollback(conn)
-		log4j.log(e, "ERROR")
+		console.error(e)
 		funcs.sendFail(res, e)
 	} finally {
 		db.close(conn)

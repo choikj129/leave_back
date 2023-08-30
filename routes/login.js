@@ -38,7 +38,7 @@ router.post("/", async (req, res, next) => {
 		log4j.log(`(${req.body.id}) - User-Agent : ${userAgent}`, "INFO")
 	} catch (e) {
 		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -58,7 +58,7 @@ router.patch("/", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}
@@ -108,7 +108,7 @@ router.patch("/reset", async (req, res, next) => {
 	} catch(e) {
 		await db.rollback(conn)
 		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
+		console.error(e)
 	} finally {
 		db.close(conn)
 	}

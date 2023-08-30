@@ -20,7 +20,7 @@ module.exports = {
                 data: []
             })
         } catch(e) {
-            log4j.log(e, "ERROR")
+            console.error(e)
         }
     },
     sendSuccess : (res, data=[], msg="") => {
@@ -31,7 +31,7 @@ module.exports = {
                 data: data
             })
         } catch(e) {
-            log4j.log(e, "ERROR")
+            console.error(e)
         }
     },
     replaceQuery : (query, params) => {
