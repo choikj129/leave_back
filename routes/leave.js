@@ -298,4 +298,52 @@ router.patch("/cnt", async (req, res, next) => {
 	}
 })
 
+router.post("/cntExcel", async (req, res, next) => {
+    let conn
+    try {
+        const requestUserLength = req.body.length
+        const result = {
+            successCount : 0,
+        }
+        conn = await db.connection()
+        const sql = `
+            MERGE INTO LEAVE_CNT L
+            USING (
+                SELECT :아이디 AS 아이디,
+                    :기준연도 AS 연도,
+                    :추가휴가수 AS 휴가수
+                FROM DUAL
+                WHERE EXISTS (
+                    SELECT 1 FROM EMP E
+                    WHERE E.아이디 = :아이디
+                )
+            ) S
+            ON (
+                L.아이디 = S.아이디
+                AND L.연도 = S.연도
+            )
+            WHEN MATCHED THEN
+                UPDATE SET L.휴가수 = S.휴가수
+            WHEN NOT MATCHED THEN
+                INSERT (아이디, 연도, 휴가수)
+                VALUES (S.아이디, S.연도, S.휴가수)
+        `
+        const successCount = await db.updateBulk(conn, sql, req.body)
+        
+        if (successCount != requestUserLength) {
+            throw `\n입력 직원 수 = ${requestUserLength}\nDB 적재 건수 = ${successCount}\n사유 : 아이디가 존재하지 않거나 기타 이유를 알 수 없는 사유\nDB 롤백 진행`
+        }
+        
+        await db.commit(conn)
+        funcs.sendSuccess(res, result)
+    } catch (e) {
+        await db.rollback(conn)
+        funcs.sendFail(res, e)
+        console.error(e)
+    } finally {
+        db.close(conn);
+    }
+    
+})
+
 module.exports = router

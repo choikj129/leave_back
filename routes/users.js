@@ -254,13 +254,12 @@ router.post("/insertExcelUsers", async (req, res, next) => {
 
 		const acceptUsersSize = result.insertUsers
 
-		await db.commit(conn);
-
+		
 		if (acceptUsersSize != requestUsersSize) {
-			funcs.sendFail(res, `\n입력 직원 수 = ${requestUsersSize}\nDB 인입 성공 건수 = ${acceptUsersSize}\n사유 : 중복아이디 혹은 기타 알 수 없는 이유`)
-			return
+			throw `\n입력 직원 수 = ${requestUsersSize}\nDB 적재 건수 = ${acceptUsersSize}\n사유 : 중복아이디 혹은 기타 알 수 없는 이유\nDB 롤백 진행.`
 		}
-
+		
+		await db.commit(conn);
 		funcs.sendSuccess(res, result);
 	} catch(e) {
 		await db.rollback(conn)
