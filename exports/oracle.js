@@ -56,6 +56,7 @@ module.exports = {
         } catch(e) {
             log4j.log("==========================================================", "ERROR")
             log4j.log(query, "ERROR")
+            log4j.log(e, "ERROR")
             log4j.log("==========================================================", "ERROR")
             throw new Error("DB select error")
         }
@@ -84,6 +85,7 @@ module.exports = {
         } catch(e) {
             log4j.log("==========================================================", "ERROR")
             log4j.log(hash[key].query, "ERROR")
+            log4j.log(e, "ERROR")
             log4j.log("==========================================================", "ERROR")
             throw new Error("DB multi select error")
         }
@@ -100,6 +102,7 @@ module.exports = {
         } catch(e) {
             log4j.log("==========================================================", "ERROR")
             log4j.log(query, "ERROR")
+            log4j.log(e, "ERROR")
             log4j.log("==========================================================", "ERROR")
             throw new Error("DB update error")
         }        
@@ -128,6 +131,7 @@ module.exports = {
         } catch(e) {
             log4j.log("==========================================================", "ERROR")
             log4j.log(hash[key].query, "ERROR")
+            log4j.log(e, "ERROR")
             log4j.log("==========================================================", "ERROR")
             throw new Error("DB multi update error")
         }
@@ -149,6 +153,7 @@ module.exports = {
             } catch (e) {
                 log4j.log("==========================================================", "ERROR")
                 log4j.log(query, "ERROR")
+                log4j.log(e, "ERROR")
                 log4j.log("==========================================================", "ERROR")
                 throw new Error("DB update bulk error")
             }
@@ -180,6 +185,7 @@ module.exports = {
         } catch(e) {
             log4j.log("==========================================================", "ERROR")
             log4j.log(hash[key].query, "ERROR")
+            log4j.log(e, "ERROR")
             log4j.log("==========================================================", "ERROR")
             throw new Error("DB multi update bulk error")
         }

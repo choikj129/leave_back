@@ -56,7 +56,7 @@ router.get("/birthday", async (req, res, next) => {
 		conn = await db.connection()
 		const sql = `
 			SELECT 
-				이름 || ' ' || 직위 이름,
+				이름 || ' ' || DECODE(관리자여부, 'N', 직위, '') 이름,
 				생일,
 				음력여부
 			FROM EMP_POS
