@@ -76,25 +76,22 @@ router.get("/", async (req, res, next) => {
 	}
 });
 
-/* 직원 휴가 수정 */
+/* 직원 수정 */
 router.patch("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const updateEmp = `UPDATE EMP SET 직위코드 = :position, 입사일 = :date WHERE 아이디 = :id`
-		const updateBirthday = `
-			MERGE INTO BIRTHDAY USING DUAL
-				ON (아이디 = :id)
-			WHEN MATCHED THEN
-				UPDATE SET 생일 = :birthday, 음력여부 = :isLunar
-			WHEN NOT MATCHED THEN
-				INSERT (아이디, 생일, 음력여부)
-				VALUES (:id, :birthday, :isLunar)
+		const query = `
+			UPDATE EMP 
+			SET 
+				직위코드 = :position,
+				입사일 = :date,
+				생일 = :birthday,
+				음력여부 = :isLunar
+			WHERE 아이디 = :id
 		`
-		const result = await db.multiUpdate(conn, {
-			updateEmp : {query : updateEmp, params : req.body},
-			updateBirthday : {query : updateBirthday, params : req.body}
-		})
+		
+		const result = await db.update(conn, query, req.body)
 
 		await db.commit(conn)
 		funcs.sendSuccess(res, result)
@@ -107,66 +104,23 @@ router.patch("/", async (req, res, next) => {
 	}
 });
 
-/* 휴가 신청 기록 */
-router.get("/history", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		const sql = `
-			SELECT A.*
-			FROM (
-				SELECT H.IDX, E.이름, E.아이디, H.내용, TO_CHAR(H.등록일자, 'YYYY-MM-DD HH24:MI:SS') 등록일자
-				FROM HISTORY H, EMP E
-				WHERE H.아이디 = E.아이디
-				ORDER BY 등록일자 DESC, 내용 DESC
-			) A
-			WHERE ROWNUM < 31
-		`
-		const result = await db.select(conn, sql, {})
-
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
-
 /* 직원 추가 */
 router.put("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
+		req.body.isLunar = req.body.isLunar ? "Y" : "N"
+
 		const sql = `
 			MERGE INTO EMP USING DUAL
 				ON (
 					아이디 = :id
 				)
 			WHEN NOT MATCHED THEN
-				INSERT (아이디, 이름, 직위코드, 입사일)
-				VALUES (:id, :name, :position, :date)
+				INSERT (아이디, 이름, 직위코드, 입사일, 생일, 음력여부)
+				VALUES (:id, :name, :position, :date, :birthday, :isLunar)
 		`
-		const result = await db.update(conn, sql, {
-			id : req.body.id,
-			name : req.body.name,
-			position : req.body.position,
-			date : req.body.date,
-		})
-
-		if (req.body.birthday) {
-			req.body.isLunar = req.body.isLunar ? "Y" : "N"
-			const birthdaySql = `
-				MERGE INTO BIRTHDAY USING DUAL
-					ON (아이디 = :id)
-				WHEN MATCHED THEN
-					UPDATE SET 생일 = :birthday, 음력여부 = :isLunar
-				WHEN NOT MATCHED THEN
-					INSERT (아이디, 생일, 음력여부)
-					VALUES (:id, :birthday, :isLunar)
-			`
-			await db.update(conn, birthdaySql, req.body)
-		}
+		const result = await db.update(conn, sql, req.body)
 
 		await db.commit(conn)
 		result == 0 ? funcs.sendFail(res, "중복된 아이디입니다.") : funcs.sendSuccess(res, result)		
@@ -184,35 +138,8 @@ router.delete("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const deleteEmp = `DELETE FROM EMP WHERE 아이디 = :id`
-		const deleteBirthday = `DELETE FROM BIRTHDAY WHERE 아이디 = :id`
-		const result = await db.multiUpdate(conn, {
-			emp : {query : deleteEmp, params : req.body},
-			birthday : {query : deleteBirthday, params : req.body},
-		})
-
-		await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		await db.rollback(conn)
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
-
-/* 경영지원실 직원 변경 */
-router.patch("/supporter", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		const updateOld = `UPDATE EMP SET 관리자여부 = 'N' WHERE 관리자여부 = 'K'`
-		const updateNew = `UPDATE EMP SET 관리자여부 = 'K' WHERE 아이디 = :id`
-		const result = await db.multiUpdate(conn, {
-			updateOld : {query : updateOld, params : {}},
-			updateNew : {query : updateNew, params : req.body},
-		})
+		const query = `DELETE FROM EMP WHERE 아이디 = :id`
+		const result = await db.update(conn, query, req.body)
 
 		await db.commit(conn)
 		funcs.sendSuccess(res, result)
@@ -231,24 +158,44 @@ router.post("/insertExcelUsers", async (req, res, next) => {
 	try {
 		const requestUsersSize = req.body.length
 		conn = await db.connection();
-		const insertUserBulk = 'MERGE INTO EMP '
-							 + 'USING DUAL ON (아이디 = :아이디)'
-							 + 'WHEN NOT MATCHED THEN '
-							 + 'INSERT (아이디, 이름, 직위코드, 입사일) VALUES (:아이디, :이름, :직위코드, :입사일)'
-
-		const insertBirthDayBulk = 'MERGE INTO BIRTHDAY '
-								 + 'USING DUAL ON (아이디 = :아이디) '
-								 + 'WHEN NOT MATCHED THEN '
-								 + 'INSERT (아이디, 생일, 음력여부) VALUES (:아이디, :생일, :음력여부)'
-
-		const insertLeaveCntBulk = 'MERGE INTO LEAVE_CNT '
-								 + 'USING DUAL ON (아이디 = :아이디) '
-								 + 'WHEN NOT MATCHED THEN '
-								 + 'INSERT (아이디, 연도, 휴가수) VALUES (:아이디, :연도, :휴가수)'
-
+		const insertUserBulk = `
+			MERGE INTO EMP
+			USING DUAL ON (
+				아이디 = :아이디
+			)
+			WHEN NOT MATCHED THEN
+				INSERT (
+					아이디,
+					이름,
+					직위코드,
+					입사일
+				) 
+				VALUES (
+					:아이디,
+					:이름,
+					:직위코드,
+					:입사일
+				)
+		`
+		const insertLeaveCntBulk = `
+			MERGE INTO LEAVE_CNT 
+			USING DUAL ON (
+				아이디 = :아이디
+			)
+			WHEN NOT MATCHED THEN 
+				INSERT (
+					아이디,
+					연도,
+					휴가수
+				) 
+				VALUES (
+					:아이디,
+					:연도,
+					:휴가수
+				)
+		`
 		const result = await db.multiUpdateBulk(conn, {
 			insertUsers : {query : insertUserBulk, params: req.body}, 
-			insertBirthday : {query : insertBirthDayBulk, params: req.body}, 
 			insertLeaveCnt : {query : insertLeaveCntBulk, params: req.body}, 
 		})
 

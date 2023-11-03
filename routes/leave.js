@@ -268,6 +268,32 @@ router.get("/cnts", async (req, res, next) => {
 	}
 })
 
+/* 휴가 신청 기록 */
+router.get("/history", async (req, res, next) => {
+	let conn
+	try {
+		conn = await db.connection()
+		const sql = `
+			SELECT A.*
+			FROM (
+				SELECT H.IDX, E.이름, E.아이디, H.내용, TO_CHAR(H.등록일자, 'YYYY-MM-DD HH24:MI:SS') 등록일자
+				FROM HISTORY H, EMP E
+				WHERE H.아이디 = E.아이디
+				ORDER BY 등록일자 DESC, 내용 DESC
+			) A
+			WHERE ROWNUM < 31
+		`
+		const result = await db.select(conn, sql, {})
+
+		funcs.sendSuccess(res, result)
+	} catch(e) {
+		funcs.sendFail(res, e)
+		console.error(e)
+	} finally {
+		db.close(conn)
+	}
+})
+
 /* 사이트 접속 (휴가 수) */
 router.patch("/cnt", async (req, res, next) => {
     let conn
