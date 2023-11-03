@@ -306,7 +306,7 @@ router.patch("/cnt", async (req, res, next) => {
 					AND 연도 = :year
                 )
 			WHEN MATCHED THEN
-				UPDATE SET 휴가수 = :cnt
+				UPDATE SET 휴가수 = :cnt, 수정일자 = SYSDATE
             WHEN NOT MATCHED THEN
 				INSERT (아이디, 연도, 휴가수)
 				VALUES (:id, :year, :cnt)
@@ -349,7 +349,7 @@ router.post("/cntExcel", async (req, res, next) => {
                 AND L.연도 = S.연도
             )
             WHEN MATCHED THEN
-                UPDATE SET L.휴가수 = S.휴가수
+                UPDATE SET L.휴가수 = S.휴가수, 수정일자 = SYSDATE
             WHEN NOT MATCHED THEN
                 INSERT (아이디, 연도, 휴가수)
                 VALUES (S.아이디, S.연도, S.휴가수)

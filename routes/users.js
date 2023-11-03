@@ -88,6 +88,7 @@ router.patch("/", async (req, res, next) => {
 				입사일 = :date,
 				생일 = :birthday,
 				음력여부 = :isLunar
+				수정일자 = SYSDATE
 			WHERE 아이디 = :id
 		`
 		
