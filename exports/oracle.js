@@ -193,7 +193,7 @@ module.exports = {
     close: (conn) => {
         try {
             log4j.log("DB Close", "INFO")
-            conn.close()
+            conn.release()
         } catch {
             log4j.log("Invalid connection", "ERROR")
         }
