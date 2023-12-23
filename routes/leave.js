@@ -178,17 +178,7 @@ router.get("/lists", async (req, res, next) => {
     let conn
 	try {
 		conn = await db.connection()
-        /* 관리자는 휴가 중 최소 휴가연도, 기본 직원은 본인 신청 최소 휴가연도 */
-        const appendQuery = !req.query.isManager ? ` LD, LEAVE_SUMMARY L
-            WHERE LD.LEAVE_IDX = L.IDX AND L.아이디 = :id 
-        ` : ""
 
-        const dateSql = `
-            SELECT
-                NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도,
-                NVL(MAX(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가종료연도
-            FROM LEAVE_DETAIL ${appendQuery}
-        `
         const listsSql = `
             SELECT
                 LD.IDX,
@@ -206,9 +196,9 @@ router.get("/lists", async (req, res, next) => {
                 AND SUBSTR(LD.휴가일, 0, 4) = :year
             ORDER BY 휴가일
         `
-		const result = await db.multiSelect(conn, {
-            lists : {query : listsSql, params : {id : req.query.id, year : req.query.year}},
-            date : {query : dateSql, params : {id : req.session.user.id}},
+		const result = await db.select(conn, listsSql, {
+            id : req.query.id,
+            year : req.query.year
         })
 
 		funcs.sendSuccess(res, result)
