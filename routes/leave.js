@@ -179,15 +179,15 @@ router.get("/lists", async (req, res, next) => {
 	try {
 		conn = await db.connection()
         /* 관리자는 휴가 중 최소 휴가연도, 기본 직원은 본인 신청 최소 휴가연도 */
-        const dateSql = !req.query.isManager
-        ? `
-            SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
-            FROM LEAVE_DETAIL LD, LEAVE_SUMMARY L
-            WHERE LD.LEAVE_IDX = L.IDX AND L.아이디 = :id
-        `
-        : `
-            SELECT NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도
-            FROM LEAVE_DETAIL
+        const appendQuery = !req.query.isManager ? ` LD, LEAVE_SUMMARY L
+            WHERE LD.LEAVE_IDX = L.IDX AND L.아이디 = :id 
+        ` : ""
+
+        const dateSql = `
+            SELECT
+                NVL(MIN(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가시작연도,
+                NVL(MAX(SUBSTR(휴가일, 0, 4)), TO_CHAR(SYSDATE, 'YYYY')) 휴가종료연도
+            FROM LEAVE_DETAIL ${appendQuery}
         `
         const listsSql = `
             SELECT
@@ -333,32 +333,25 @@ router.post("/cntExcel", async (req, res, next) => {
         }
         conn = await db.connection()
         const sql = `
-            MERGE INTO LEAVE_CNT L
-            USING (
-                SELECT :아이디 AS 아이디,
-                    :기준연도 AS 연도,
-                    :추가휴가수 AS 휴가수
-                FROM DUAL
-                WHERE EXISTS (
-                    SELECT 1 FROM EMP E
-                    WHERE E.아이디 = :아이디
-                )
-            ) S
+            MERGE INTO LEAVE_CNT
+            USING DUAL
             ON (
-                L.아이디 = S.아이디
-                AND L.연도 = S.연도
+                아이디 = :아이디
+                AND 연도 = :기준연도
             )
             WHEN MATCHED THEN
-                UPDATE SET L.휴가수 = S.휴가수, 수정일자 = SYSDATE
+                UPDATE SET 휴가수 = :휴가수, 수정일자 = SYSDATE
             WHEN NOT MATCHED THEN
                 INSERT (아이디, 연도, 휴가수)
-                VALUES (S.아이디, S.연도, S.휴가수)
+                VALUES (:아이디, :기준연도, :휴가수)
         `
         const successCount = await db.updateBulk(conn, sql, req.body)
         
         if (successCount != requestUserLength) {
             throw `\n입력 직원 수 = ${requestUserLength}\nDB 적재 건수 = ${successCount}\n사유 : 아이디가 존재하지 않거나 기타 이유를 알 수 없는 사유\nDB 롤백 진행`
         }
+
+        result.successCount = successCount
         
         await db.commit(conn)
         funcs.sendSuccess(res, result)
