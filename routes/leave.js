@@ -352,7 +352,75 @@ router.post("/cntExcel", async (req, res, next) => {
     } finally {
         db.close(conn);
     }
-    
+})
+
+router.patch("/carry-over", async (req, res, next) => {
+    let conn
+    try {
+        conn = await db.connection()
+        const sql = `
+            MERGE INTO LEAVE_CNT LT 
+            USING (
+                SELECT 아이디, 휴가수 - SUM(사용휴가수) AS 남은휴가수
+                FROM (
+                    SELECT 
+                        LC.아이디,
+                        LC.휴가수, 
+                        LD.휴가일, 
+                        DECODE(LD.휴가구분, '휴가', 1, '오전 반차', 0.5, '오후 반차', 0.5, 0) AS 사용휴가수
+                    FROM LEAVE_CNT LC
+                        LEFT JOIN (
+                            SELECT 
+                                LS.아이디,
+                                LD.휴가일,
+                                LD.휴가구분
+                            FROM 
+                                LEAVE_SUMMARY LS, 
+                                LEAVE_DETAIL LD
+                            WHERE 
+                                LS.IDX = LD.LEAVE_IDX 
+                                AND LD.휴가일 BETWEEN ':lastYear' AND ':thisYear'
+                        ) LD ON LC.아이디 = LD.아이디
+                    WHERE LC.연도 = ':lastYear'
+                )
+                GROUP BY 아이디, 휴가수
+                ${req.body.isAllCarry ? "" : "HAVING 휴가수 - SUM(사용휴가수) < 0"}
+            ) LL ON (
+                LT.아이디 = LL.아이디
+                AND LT.연도 = ':thisYear'
+            )
+            WHEN MATCHED THEN
+                UPDATE SET
+                    이월휴가수 = LL.남은휴가수,
+                    휴가수 = LT.휴가수 - LT.이월휴가수 + LL.남은휴가수,
+                    수정일자 = SYSDATE
+            WHEN NOT MATCHED THEN
+                INSERT (
+                    아이디,
+                    연도,
+                    휴가수,
+                    이월휴가수		
+                ) VALUES (
+                    LL.아이디,
+                    ':thisYear',
+                    LL.남은휴가수,
+                    LL.남은휴가수
+                )            
+        `
+        await db.update(conn, sql, {
+            thisYear : req.body.year,
+            lastYear : req.body.year - 1,
+        })
+        
+        await db.commit(conn)
+        funcs.sendSuccess(res)
+    } catch (e) {
+        await db.rollback(conn)
+        funcs.sendFail(res, e)
+        console.error(e)
+    } finally {
+        db.close(conn);
+    }
 })
 
 module.exports = router
