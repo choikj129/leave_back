@@ -5,6 +5,20 @@ let db = require("../exports/oracle")
 let funcs = require("../exports/functions")
 let kakaowork = require("../exports/kakaowork")
 
+const updateCntSql = `
+    MERGE INTO LEAVE_CNT
+    USING DUAL
+    ON (
+        아이디 = :아이디
+        AND 연도 = :기준연도
+    )
+    WHEN MATCHED THEN
+        UPDATE SET 휴가수 = :휴가수 + 이월휴가수, 수정일자 = SYSDATE
+    WHEN NOT MATCHED THEN
+        INSERT (아이디, 연도, 휴가수)
+        VALUES (:아이디, :기준연도, :휴가수)
+`
+
 /* 휴가 일정 페이지 접속 (이벤트 목록) */
 router.get("/", async (req, res, next) => {
     const id = req.query.id
@@ -289,19 +303,7 @@ router.patch("/cnt", async (req, res, next) => {
     let conn
 	try {
 		conn = await db.connection()
-        const sql = `
-            MERGE INTO LEAVE_CNT USING DUAL
-                ON (
-                    아이디 = :id
-					AND 연도 = :year
-                )
-			WHEN MATCHED THEN
-				UPDATE SET 휴가수 = :cnt, 수정일자 = SYSDATE
-            WHEN NOT MATCHED THEN
-				INSERT (아이디, 연도, 휴가수)
-				VALUES (:id, :year, :cnt)
-        `
-		const result = await db.select(conn, sql, req.body)
+		const result = await db.select(conn, updateCntSql, req.body)
 
 		await db.commit(conn)
 		funcs.sendSuccess(res, result)
@@ -322,20 +324,7 @@ router.post("/cntExcel", async (req, res, next) => {
             successCount : 0,
         }
         conn = await db.connection()
-        const sql = `
-            MERGE INTO LEAVE_CNT
-            USING DUAL
-            ON (
-                아이디 = :아이디
-                AND 연도 = :기준연도
-            )
-            WHEN MATCHED THEN
-                UPDATE SET 휴가수 = :휴가수, 수정일자 = SYSDATE
-            WHEN NOT MATCHED THEN
-                INSERT (아이디, 연도, 휴가수)
-                VALUES (:아이디, :기준연도, :휴가수)
-        `
-        const successCount = await db.updateBulk(conn, sql, req.body)
+        const successCount = await db.updateBulk(conn, updateCntSql, req.body)
         
         if (successCount != requestUserLength) {
             throw `\n입력 직원 수 = ${requestUserLength}\nDB 적재 건수 = ${successCount}\n사유 : 아이디가 존재하지 않거나 기타 이유를 알 수 없는 사유\nDB 롤백 진행`
