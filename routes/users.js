@@ -36,7 +36,11 @@ router.get("/", async (req, res, next) => {
 					SELECT
 						아이디,
 						SUBSTR(휴가일, 0, 4) 연도,
-						SUM(DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, '포상', 0, '리프레시', 0, 1)) 사용휴가수,
+						SUM(CASE 
+							WHEN 휴가구분 IN ('오전 반차', '오후 반차') THEN 0.5
+							WHEN 휴가구분 IN ('기타 휴가', '포상 휴가', '리프레시 휴가') THEN 0
+							ELSE 1
+						END) 사용휴가수,
 						SUM(DECODE(SUBSTR(휴가구분, 0, 2), '기타', 1, 0)) 기타휴가수
 					FROM LEAVE_SUMMARY L, LEAVE_DETAIL LD
 					WHERE 
