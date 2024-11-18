@@ -19,6 +19,25 @@ const updateCntSql = `
         VALUES (:아이디, :기준연도, :휴가수)
 `
 
+const updateRewardCntSql = `
+    MERGE INTO REWARD
+    USING DUAL
+    ON (
+        아이디 = :아이디
+        AND 기준연도 = :기준연도
+        AND 휴가유형 = :휴가유형
+        AND 등록일 = :등록일
+        AND 만료일 = :만료일
+    )
+    WHEN MATCHED THEN
+        UPDATE SET 
+            휴가일수 = :휴가수,
+            등록일자 = SYSDATE
+    WHEN NOT MATCHED THEN
+        INSERT (아이디, 기준연도, 휴가유형, 등록일, 만료일, 휴가일수)
+        VALUES (:아이디, :기준연도, :휴가유형, :등록일, :만료일, :휴가수)
+`
+
 /* 휴가 일정 페이지 접속 (이벤트 목록) */
 router.get("/", async (req, res, next) => {
     const id = req.query.id
@@ -298,7 +317,6 @@ router.get("/history", async (req, res, next) => {
 	}
 })
 
-/* 사이트 접속 (휴가 수) */
 router.patch("/cnt", async (req, res, next) => {
     let conn
 	try {
@@ -318,13 +336,45 @@ router.patch("/cnt", async (req, res, next) => {
 
 router.post("/cntExcel", async (req, res, next) => {
     let conn
-    try {
-        const requestUserLength = req.body.length
+    try {        
         const result = {
             successCount : 0,
         }
+
+        let reqUsers = []
+        let updateSql = updateCntSql
+        if (req.body.isReward) {
+            updateSql = updateRewardCntSql
+
+            req.body.users.forEach(user => {
+                if (user.포상휴가수 > 0) {
+                    reqUsers.push({
+                        아이디 : user.아이디,
+                        기준연도 : user.기준연도,
+                        휴가유형 : "포상",
+                        등록일 : user.포상휴가등록일,
+                        만료일 : user.포상휴가만료일,
+                        휴가수 : user.포상휴가수
+                    })
+                }
+
+                if (user.리프레시휴가수 > 0) {
+                    reqUsers.push({
+                        아이디 : user.아이디,
+                        기준연도 : user.기준연도,
+                        휴가유형 : "리프레시",
+                        등록일 : user.리프레시휴가등록일,
+                        만료일 : user.리프레시휴가만료일,
+                        휴가수 : user.리프레시휴가수
+                    })
+                }
+            })
+        } else reqUsers = req.body.users
+
+        const requestUserLength = reqUsers.length
+
         conn = await db.connection()
-        const successCount = await db.updateBulk(conn, updateCntSql, req.body)
+        const successCount = await db.updateBulk(conn, updateSql, reqUsers)
         
         if (successCount != requestUserLength) {
             throw `\n입력 직원 수 = ${requestUserLength}\nDB 적재 건수 = ${successCount}\n사유 : 아이디가 존재하지 않거나 기타 이유를 알 수 없는 사유\nDB 롤백 진행`
