@@ -9,6 +9,15 @@ router.get("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
+
+		let params = {year : req.query.year}
+		let whereId = ""
+		const userSession = req.session.user
+		if (!userSession.isManager) {
+			whereId = "AND E.아이디 = :id"
+			params.id = userSession.id
+		}
+
 		const sql = `
 			SELECT
 				E.아이디, E.이름, E.직위코드, E.직위, E.입사일, E.관리자여부, E.생일, E.음력여부,
@@ -71,12 +80,13 @@ router.get("/", async (req, res, next) => {
 					GROUP BY 아이디
 				) RR ON E.아이디 = RR.아이디
 			WHERE 직위코드 != 'Z'
+				${whereId}
 			ORDER BY 
 				직위코드,
 				입사일,
 				이름
 		`
-		const result = await db.select(conn, sql, {year : req.query.year})
+		const result = await db.select(conn, sql, params)
 
 		funcs.sendSuccess(res, result)
 	} catch(e) {
