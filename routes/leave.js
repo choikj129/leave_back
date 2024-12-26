@@ -60,7 +60,7 @@ router.get("/", async (req, res, next) => {
                     L.아이디 = E.아이디
                     AND L.IDX = LD.LEAVE_IDX
                     AND 시작일 >= TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY') || '-01-01'
-                ORDER BY 시작일
+                ORDER BY 시작일, LD.기타휴가내용 DESC, LD.휴가구분, 내용
             `
             : `
                 SELECT 
@@ -77,7 +77,7 @@ router.get("/", async (req, res, next) => {
                     아이디 = :id 
                     AND L.IDX = LD.LEAVE_IDX
                     AND 시작일 >= TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY') || '-01-01'
-                ORDER BY 시작일
+                ORDER BY 시작일, LD.기타휴가내용 DESC, LD.휴가구분, 내용
             `
 
 		const result = await db.select(conn, sql, { id: id })
