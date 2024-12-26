@@ -217,7 +217,7 @@ router.get("/lists", async (req, res, next) => {
                 LD.IDX,
                 LD.휴가일 || ' (' || TO_CHAR(TO_DATE(LD.휴가일, 'YYYY-MM-DD'), 'DY','NLS_DATE_LANGUAGE=KOREAN') || ')' 휴가일,
                 LD.휴가구분,
-                LD.기타휴가내용 || ' 휴가' 기타휴가내용,
+                LD.기타휴가내용,
                 E.아이디,
                 SUBSTR(LD.휴가일, 0, 4) 연도,
                 DECODE(SUBSTR(휴가구분, 0, 2), '오후', 0.5, '오전', 0.5, '기타', 0, 1) 휴가일수
