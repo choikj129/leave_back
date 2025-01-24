@@ -44,41 +44,35 @@ router.get("/", async (req, res, next) => {
     let conn
 	try {
 		conn = await db.connection()
-        const sql = !id
-            ? `
-                SELECT
-                    DISTINCT L.IDX,
-                    E.이름 || ' ' || E.직위 || ' ' || L.내용 내용,
-                    L.시작일,
-                    L.종료일,
-                    L.휴가일수,
-                    LD.휴가구분,
-                    LD.기타휴가내용,
-                    L.REWARD_IDX
-                FROM LEAVE_SUMMARY L, LEAVE_DETAIL LD, EMP_POS E
-                WHERE
-                    L.아이디 = E.아이디
-                    AND L.IDX = LD.LEAVE_IDX
-                    AND 시작일 >= TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY') || '-01-01'
-                ORDER BY 시작일, LD.기타휴가내용 DESC, LD.휴가구분, 내용
-            `
-            : `
-                SELECT 
-                    DISTINCT L.IDX,
-                    L.내용,
-                    L.시작일,
-                    L.종료일,
-                    L.휴가일수,
-                    LD.휴가구분,
-                    LD.기타휴가내용,
-                    L.REWARD_IDX
-                FROM LEAVE_SUMMARY L, LEAVE_DETAIL LD
-                WHERE 
-                    아이디 = :id 
-                    AND L.IDX = LD.LEAVE_IDX
-                    AND 시작일 >= TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY') || '-01-01'
-                ORDER BY 시작일, LD.기타휴가내용 DESC, LD.휴가구분, 내용
-            `
+        const sql = `
+            SELECT
+                DISTINCT L.IDX,                
+                ${!id ? "E.이름, E.이름 || ' ' || E.직위 || ' ' || L.내용" : "L.내용"} AS 내용,
+                L.시작일,
+                L.종료일,
+                L.휴가일수,
+                LD.휴가구분,
+                LD.기타휴가내용,
+                L.REWARD_IDX,
+                C.코드명 AS 휴가순위
+            FROM 
+                LEAVE_SUMMARY L,
+                LEAVE_DETAIL LD
+                    LEFT JOIN (
+                    SELECT 코드명, 표시내용
+                    FROM CODE
+                    WHERE 
+                        코드구분 = '휴가순위'
+                        AND 사용여부 = 'Y'
+                ) C ON C.표시내용 = LD.휴가구분 
+                ${!id ? ", EMP_POS E" : ""}
+            WHERE
+                ${!id ? "L.아이디 = E.아이디" : "아이디 = :id"}
+                AND L.IDX = LD.LEAVE_IDX
+                AND L.시작일 >= TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY') || '-01-01'
+                AND LD.휴가일 >= TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY') || '-01-01'
+            ORDER BY L.시작일${!id ? ", 휴가순위, E.이름" : ""}
+        `
 
 		const result = await db.select(conn, sql, { id: id })
 

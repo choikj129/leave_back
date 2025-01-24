@@ -21,7 +21,9 @@ router.get("/", async (req, res, next) => {
 		const sql = `
 			SELECT
 				E.아이디, E.이름, E.직위코드, E.직위, E.입사일, E.관리자여부, E.생일, E.음력여부,
-				:year 연도, LC.휴가수, LC.이월휴가수,
+				:year 연도, 
+				LC.휴가수, 
+				LC.이월휴가수,
 				NVL(LD.사용휴가수, 0) 사용휴가수,
 				NVL(LD.기타휴가수, 0) 기타휴가수,
 				NVL(RF.리프레시휴가수, 0) 리프레시휴가수,

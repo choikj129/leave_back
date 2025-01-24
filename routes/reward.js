@@ -54,6 +54,31 @@ router.put("/", async (req, res, next) => {
 	}
 })
 
+/* 포상 / 리프레시 휴가 수정 */
+router.post("/", async (req, res, next) => {
+    let conn
+	try {
+		conn = await db.connection()
+        const sql = `
+            UPDATE REWARD 
+            SET
+                휴가일수 = :cnt,
+                만료일 = :expireDate
+            WHERE IDX = :idx
+        `
+		const result = await db.update(conn, sql, req.body)
+        
+        await db.commit(conn)
+		funcs.sendSuccess(res, result)
+	} catch(e) {
+        await db.rollback(conn)
+		funcs.sendFail(res, e)
+        console.error(e)
+	} finally {
+		db.close(conn)
+	}
+})
+
 /* 포상 / 리프레시 휴가 삭제 */
 router.delete("/", async (req, res, next) => {
     let conn
