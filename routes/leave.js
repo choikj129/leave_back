@@ -182,7 +182,7 @@ router.patch("/", async (req, res, next) => {
         }
         await db.multiUpdateBulk(conn, dbHash)
 
-        const contents = `${name}\n${kakaoWorkArr.sort().join("\n")}`
+        const contents = `${req.body.isManager? "(관리자) " : ""}${name}\n${kakaoWorkArr.sort().join("\n")}`
         const isSend = await kakaowork.sendMessage(contents)
         if (isSend) {
             funcs.sendSuccess(res, [], "카카오워크 전송 성공")
