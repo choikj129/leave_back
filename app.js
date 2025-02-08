@@ -9,6 +9,9 @@ let log4j = require("./exports/log4j")
 let helmet = require("helmet");
 let interceptor = require("./exports/interceptor")
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./swagger/swagger.js');
+
 let indexRouter = require("./routes/index")
 let loginRouter = require("./routes/login")
 let leaveRouter = require("./routes/leave")
@@ -81,6 +84,9 @@ app.use("/users", usersRouter)
 app.use("/cron", cronRouter)
 app.use("/api", apiRouter)
 app.use("/holiday", holidayRouter)
+
+// Swagger UI 설정
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
