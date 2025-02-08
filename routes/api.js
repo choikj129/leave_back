@@ -4,7 +4,31 @@ let log4j = require("../exports/log4j")
 const db = require("../exports/oracle")
 const funcs = require("../exports/functions")
 
-//코드에서 키 불러오기
+/**
+ * @swagger
+ * /api/code:
+ *   get:
+ *     summary: 공공 데이터 키 조회
+ *     tags: [Api]
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       KEY:
+ *                         type: string
+ */
 router.get("/code", async (req, res, next) => {
 	let  conn 
 		try {
@@ -22,7 +46,35 @@ router.get("/code", async (req, res, next) => {
 })
 
 
-// 키 이름 수정
+/**
+ * @swagger
+ * /api/update:
+ *   patch:
+ *     summary: 공공 데이터 키 수정
+ *     tags: [Api]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - key
+ *             properties:
+ *               key:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ */
 router.patch('/update', async (req, res, next) => {
 	const param = req.body
 	// 키 값 없을 시 실행 안함

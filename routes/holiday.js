@@ -4,7 +4,49 @@ let log4j = require("../exports/log4j")
 let db = require("../exports/oracle")
 let funcs = require("../exports/functions")
 
-/* 공휴일 목록 불러오기 */
+/**
+ * @swagger
+ * /holiday:
+ *   get:
+ *     summary: 공휴일 조회
+ *     tags: [Holiday]
+ *     parameters:
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: string
+ *           example: 2025
+ *         required: true
+ *         description: 년도
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       명칭:
+ *                         type: string
+ *                         example: 1월1일
+ *                       수동여부:
+ *                         type: string
+ *                         example: N
+ *                       시작일:
+ *                         type: string
+ *                         example: 20250101
+ *                       종료일:
+ *                         type: string
+ *                         example: 20250101
+ */
 router.get("/", async (req, res, next) => {
 	let conn
 	try {
@@ -30,7 +72,36 @@ router.get("/", async (req, res, next) => {
 	}
 })
 
-/* 공휴일 상세 목록 불러오기 */
+/**
+ * @swagger
+ * /holiday/detail:
+ *   get:
+ *     summary: 공휴일 상세 조회
+ *     description: 로그인 시 캘린더에서 사용할 공휴일 store에 저장
+ *     tags: [Holiday]
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       명칭:
+ *                         type: string
+ *                         example: 1월1일
+ *                       날짜:
+ *                         type: string
+ *                         example: 20250101
+ */
 router.get("/detail", async (req, res, next) => {
 	let conn
 	try {
@@ -51,7 +122,41 @@ router.get("/detail", async (req, res, next) => {
 	}
 })
 
-/* 공휴일 수동 삽입 */
+/**
+ * @swagger
+ * /holiday:
+ *   put:
+ *     summary: 공휴일 추가
+ *     description: 캘린더에 없는 휴일 추가
+ *     tags: [Holiday]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - holiday
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: 대체공휴일
+ *               holiday:
+ *                 type: string
+ *                 example: 20250127
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ */
 router.put("/", async (req, res, next) => {
 	let conn
 	try {
@@ -71,7 +176,41 @@ router.put("/", async (req, res, next) => {
 	}
 })
 
-/* 공휴일 삭제 */
+/**
+ * @swagger
+ * /holiday:
+ *   delete:
+ *     summary: 공휴일 삭제
+ *     description: 수동 추가한 공휴일 삭제
+ *     tags: [Holiday]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - year
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: 설날 대체공휴일
+ *               year:
+ *                 type: string
+ *                 example: 2025
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ */
 router.delete("/", async (req, res, next) => {
 	let conn
 	try {
