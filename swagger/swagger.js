@@ -11,7 +11,7 @@ const options = {
     servers: [
       {
         url: 'https://leave.xcn.kr/api',
-        description: '개발 서버',
+        description: '휴가웹 backend api',
       },
     ],
   },
