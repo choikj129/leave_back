@@ -5,7 +5,6 @@ const db = require("../exports/oracle")
 const funcs = require("../exports/functions")
 
 /**
- * @swagger
  * /api/code:
  *   get:
  *     summary: 공공 데이터 키 조회
@@ -33,8 +32,16 @@ router.get("/code", async (req, res, next) => {
 	let  conn 
 		try {
 			conn = await db.connection()
-			const sql = `SELECT 표시내용 KEY FROM CODE WHERE 코드구분 = '공공데이터키' AND 사용여부 = 'Y' ORDER BY 코드명`
+			const sql = `
+				SELECT 표시내용 KEY 
+				FROM CODE 
+				WHERE 
+					코드구분 = '공공데이터키' 
+					AND 사용여부 = 'Y' 
+				ORDER BY 코드명
+			`
 			const rows = await db.select(conn, sql, {})
+			console.log(rows)
 			funcs.sendSuccess(res, rows)
 		} catch (e){
 			db.rollback(conn)
@@ -47,7 +54,6 @@ router.get("/code", async (req, res, next) => {
 
 
 /**
- * @swagger
  * /api/update:
  *   patch:
  *     summary: 공공 데이터 키 수정

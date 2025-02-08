@@ -10,6 +10,10 @@ const options = {
     },
     servers: [
       {
+        url: 'http://localhost:8080/api',
+        description: '개발 서버',
+      },
+      {
         url: 'https://leave.xcn.kr/api',
         description: '휴가웹 backend api',
       },

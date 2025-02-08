@@ -86,7 +86,13 @@ app.use("/api", apiRouter)
 app.use("/holiday", holidayRouter)
 
 // Swagger UI 설정
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+	explorer: true,
+	swaggerOptions: {
+	  tryItOutEnabled: true,
+	  tagsSorter: "alpha",
+	},
+}));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

@@ -17,6 +17,27 @@ router.get("/logout", (req, res, next) => {
 	})
 })
 
+/**
+ * @swagger
+ * /download:
+ *   get:
+ *     summary: 파일 다운로드
+ *     tags: [Etc]
+ *     parameters:
+ *       - in: query
+ *         name: fileName
+ *         schema:
+ *           type: string
+ *           example: sampleExcel.xlsx
+ *         required: true
+ *         description: 파일 명명
+ *     responses:
+ *       200:
+ *         content:
+ *           attachment:
+ *             schema:
+ *               type: file
+ */
 router.get("/download", (req, res, next) => {
 	const filePath = `${__dirname}/../public/files/`
 	let fileName = req.query.fileName
@@ -29,6 +50,50 @@ router.get("/download", (req, res, next) => {
 	})
 })
 
+/**
+ * @swagger
+ * /code:
+ *   get:
+ *     summary: 공통 코드 조회
+ *     tags: [Etc]
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *           example: 직위
+ *         required: true
+ *         description: 공통 코드의 구분 값
+ *       - in: query
+ *         name: reverse
+ *         schema:
+ *           type: string
+ *           example: DESC
+ *         required: false
+ *         description: 정렬 조건
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       코드명:
+ *                         type: string
+ *                         example: Z
+ *                       표시내용:
+ *                         type: string
+ *                         example: 관리자
+ */
 router.get("/code", async (req, res, next) => {
 	let conn
 	try {
@@ -50,6 +115,39 @@ router.get("/code", async (req, res, next) => {
 	}
 })
 
+/**
+ * @swagger
+ * /birthday:
+ *   get:
+ *     summary: 직원 생일 조회
+ *     description: 작년, 올해, 내년 생일 조회
+ *     tags: [Etc]
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       내용:
+ *                         type: string
+ *                         example: 어다인 2025년 11월 16일 생일🎉
+ *                       생일:
+ *                         type: string
+ *                         example: 2025-11-16
+ *                       음력여부:
+ *                         type: boolean
+ *                         example: false
+ */
 router.get("/birthday", async (req, res, next) => {
 	let conn
 	try {
