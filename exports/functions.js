@@ -34,6 +34,21 @@ module.exports = {
             console.error(e)
         }
     },
+    checkOnlyManagerUrl : (req, res) => {
+        if (req.session.user.isManager) return true
+        
+        try {
+            res.json({
+                status: false,
+                msg: "관리자만 사용할 수 있는 API 입니다.",
+                data: []
+            })
+        } catch(e) {
+            console.error(e)
+        }
+
+        return false
+    },
     replaceQuery : (query, params) => {
         /* 쿼리에 :key를 치환 */
         Object.entries(params).forEach((param) => {

@@ -152,6 +152,8 @@ router.get("/", async (req, res, next) => {
  *                   type: string
  */
 router.put("/", async (req, res, next) => {
+	if (!funcs.checkOnlyManagerUrl(req, res)) return 
+
     let conn
 	try {
 		conn = await db.connection()
@@ -183,7 +185,7 @@ router.put("/", async (req, res, next) => {
  *             properties:
  *               idx:
  *                 type: int
- *                 example: 시퀀스
+ *                 example: 5
  *               cnt:
  *                 type: int
  *                 example: 5
@@ -205,6 +207,8 @@ router.put("/", async (req, res, next) => {
  *                   type: string
  */
 router.patch("/", async (req, res, next) => {
+	if (!funcs.checkOnlyManagerUrl(req, res)) return 
+
     let conn
 	try {
 		conn = await db.connection()
@@ -252,6 +256,8 @@ router.patch("/", async (req, res, next) => {
  *                   type: string
  */
 router.delete("/", async (req, res, next) => {
+	if (!funcs.checkOnlyManagerUrl(req, res)) return 
+
     let conn
 	try {
 		conn = await db.connection()
