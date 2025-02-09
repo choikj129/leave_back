@@ -2,12 +2,17 @@ let express = require("express")
 let router = express.Router()
 let cron = require("node-cron")
 let log4j = require("../exports/log4j")
-let db = require("../exports/oracle")
 let holidayKey = require("../exports/config/apiKey").holiday
 let funcs = require("../exports/functions")
 const axios = require("axios")
 
-const holidaySql = require("./sql/sql_holiday")
+// ${process.db}로 동적으로 하려 했지만 Ctrl 추적이 안돼서 기본 값은 그냥 하드코딩 함
+let db = require("../exports/oracle")
+let holidaySql = require("../oracle/sql_holiday")
+if ((process.db || "oracle") != "oracle") {
+	db = require(`../exports/${process.db}`)
+	holidaySql = require(`../${process.db}/sql_holiday`)
+} 
 
 /* 공휴일 목록 불러오기 */
 const setHoliday = async (year, req, res) => {
@@ -53,9 +58,6 @@ const setHoliday = async (year, req, res) => {
 	}
 }
 
-/* TO-DO
-	미사용 & 만료 안 된 포상, 리프레시 휴가 이월	
-*/
 const setCarryOver = async (res) => {
 	const year = new Date().getFullYear()
 	log4j.log("남은 포상, 리프레시 휴가 이월 시작")

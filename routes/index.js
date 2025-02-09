@@ -2,9 +2,16 @@ let express = require("express")
 let router = express.Router()
 let log4j = require("../exports/log4j")
 let path = require("path")
-let db = require("../exports/oracle")
 let funcs = require("../exports/functions")
 const holidayKR = require("holiday-kr")
+
+// ${process.db}로 동적으로 하려 했지만 Ctrl 추적이 안돼서 기본 값은 그냥 하드코딩 함
+let db = require("../exports/oracle")
+let commonSql = require("../oracle/sql_common")
+if ((process.db || "oracle") != "oracle") {
+	db = require(`../exports/${process.db}`)
+	commonSql = require(`../${process.db}/sql_common`)
+} 
 
 router.get("/logout", (req, res, next) => {
 	req.session.destroy((err) => {
@@ -70,7 +77,7 @@ router.get("/download", (req, res, next) => {
  *           type: string
  *           example: DESC
  *         required: false
- *         description: 정렬 조건
+ *         description: 코드명 기준 정렬 조건
  *     responses:
  *       200:
  *         content:
@@ -99,13 +106,7 @@ router.get("/code", async (req, res, next) => {
 	try {
 		conn = await db.connection()
 		const sort = req.query.reverse != undefined && req.query.reverse ? "DESC" : "ASC"
-		const sql = `
-			SELECT 코드명, 표시내용 
-			FROM CODE
-			WHERE 코드구분 = :name AND 사용여부 = 'Y' 
-			ORDER BY 코드명 ${sort}
-		`
-		const result = await db.select(conn, sql, {name : req.query.name})
+		const result = await db.select(conn, commonSql.selectCommonCode(sort), {name : req.query.name})
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
@@ -120,7 +121,7 @@ router.get("/code", async (req, res, next) => {
  * /birthday:
  *   get:
  *     summary: 직원 생일 조회
- *     description: 작년, 올해, 내년 생일 조회
+ *     description: 3년치 (작년, 올해, 내년) 생일 조회
  *     tags: [Etc]
  *     responses:
  *       200:
@@ -154,16 +155,7 @@ router.get("/birthday", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const sql = `
-			SELECT 
-				이름 || ' ' || DECODE(관리자여부, 'N', 직위, '') 이름,
-				생일,
-				음력여부
-			FROM EMP_POS
-			WHERE 생일 IS NOT NULL
-		`
-		
-		const result = await db.select(conn, sql, {})
+		const result = await db.select(conn, commonSql.selectEmpBirthday, {})
 
 		const year = new Date().getFullYear()				
 		

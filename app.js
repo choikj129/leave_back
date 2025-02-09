@@ -12,6 +12,11 @@ let interceptor = require("./exports/interceptor")
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger/swagger.js');
 
+if (process.argv.slice(2) && process.argv.slice(2)[0] == "maria") {
+	log4j.log("Use Maria DB", "INFO")
+	process.db = "maria"
+}
+
 let indexRouter = require("./routes/index")
 let loginRouter = require("./routes/login")
 let leaveRouter = require("./routes/leave")
@@ -20,18 +25,6 @@ let usersRouter = require("./routes/users")
 let cronRouter = require("./routes/cron")
 let apiRouter = require("./routes/api")
 let holidayRouter = require("./routes/holiday")
-
-if (process.argv.slice(2) && process.argv.slice(2)[0] == "maria") {
-	log4j.log("Use Maria DB", "INFO")
-	indexRouter = require("./routes_maria/index")
-	loginRouter = require("./routes_maria/login")
-	leaveRouter = require("./routes_maria/leave")
-	rewardRouter = require("./routes_maria/reward")
-	usersRouter = require("./routes_maria/users")
-	cronRouter = require("./routes_maria/cron")
-	apiRouter = require("./routes_maria/api")
-	holidayRouter = require("./routes_maria/holiday")
-}
 
 let app = express()
 

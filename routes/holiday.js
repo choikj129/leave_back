@@ -1,10 +1,15 @@
 let express = require("express")
 let router = express.Router()
 let log4j = require("../exports/log4j")
-let db = require("../exports/oracle")
 let funcs = require("../exports/functions")
 
-const sql = require("./sql/sql_holiday")
+// ${process.db}로 동적으로 하려 했지만 Ctrl 추적이 안돼서 기본 값은 그냥 하드코딩 함
+let db = require("../exports/oracle")
+let holidaySql = require("../oracle/sql_holiday")
+if ((process.db || "oracle") != "oracle") {
+	db = require(`../exports/${process.db}`)
+	holidaySql = require(`../${process.db}/sql_holiday`)
+} 
 
 /**
  * @swagger
@@ -53,8 +58,8 @@ const sql = require("./sql/sql_holiday")
 router.get("/", async (req, res, next) => {
 	let conn
 	try {
-		conn = await db.connection()		
-		const result = await db.select(conn, sql.selectHolidays, req.query)
+		conn = await db.connection()
+		const result = await db.select(conn, holidaySql.selectHolidays, req.query)
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
@@ -99,7 +104,7 @@ router.get("/detail", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const result = await db.select(conn, sql.selectDetailHolidays, req.query)
+		const result = await db.select(conn, holidaySql.selectDetailHolidays, req.query)
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
@@ -156,7 +161,7 @@ router.put("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const result = await db.updateBulk(conn, sql.updateHoliday, req.body)
+		const result = await db.updateBulk(conn, holidaySql.updateHoliday, req.body)
         await db.commit(conn)
 		funcs.sendSuccess(res, result)
 	} catch (e) {
@@ -206,7 +211,7 @@ router.delete("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()		
-		const result = await db.update(conn, sql.deleteHoliday, req.body)
+		const result = await db.update(conn, holidaySql.deleteHoliday, req.body)
         await db.commit(conn)
 		funcs.sendSuccess(res, result)
 	} catch (e) {

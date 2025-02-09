@@ -1,8 +1,13 @@
 let express = require("express")
 let router = express.Router()
 let log4j = require("../exports/log4j")
-const db = require("../exports/oracle")
 const funcs = require("../exports/functions")
+
+// ${process.db}로 동적으로 하려 했지만 Ctrl 추적이 안돼서 기본 값은 그냥 하드코딩 함
+let db = require("../exports/oracle")
+if ((process.db || "oracle") != "oracle") {
+	db = require(`../exports/${process.db}`)
+} 
 
 /**
  * /api/code:
