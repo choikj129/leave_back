@@ -9,9 +9,11 @@ const axios = require("axios")
 // ${process.db}로 동적으로 하려 했지만 Ctrl 추적이 안돼서 기본 값은 그냥 하드코딩 함
 let db = require("../exports/oracle")
 let holidaySql = require("../oracle/sql_holiday")
+let rewardSql = require("../oracle/sql_reward")
 if ((process.db || "oracle") != "oracle") {
 	db = require(`../exports/${process.db}`)
 	holidaySql = require(`../${process.db}/sql_holiday`)
+	rewardSql = require(`../${process.db}/sql_reward`)
 } 
 
 /* 공휴일 목록 불러오기 */
@@ -64,18 +66,7 @@ const setCarryOver = async (res) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const insert = `
-			INSERT INTO REWARD (
-				IDX, 아이디, 휴가유형, 휴가일수, 등록일, 만료일, 사용일수, 기준연도, ROOT_IDX
-			)
-			SELECT SEQ_REWARD.NEXTVAL, 아이디, 휴가유형, 휴가일수 - 사용일수, 등록일, 만료일, 0, ${year}, IDX
-			FROM REWARD
-			WHERE 
-				기준연도 = TO_CHAR(${year - 1})
-				AND 휴가일수 > 사용일수
-				AND 만료일 >= ${year} || '0101'
-		`
-		const result = await db.select(conn, insert, {})
+		const result = await db.select(conn, rewardSql.carryOverRewrad(year), {})
 
 		await db.commit(conn)
 
@@ -126,7 +117,7 @@ cron.schedule("0 0 10 1 2-12 *", async () => {
 	setHoliday(year)
 })
 
-cron.schedule("0 0 10 1 1 *", async () => {
+cron.schedule("0 0 0 1 1 *", async () => {
 	// 매년 1월 1일에 올해, 내년 공휴일 업데이트
 	let year = new Date().getFullYear()
 	await setHoliday(year)

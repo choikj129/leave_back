@@ -14,6 +14,20 @@ module.exports = {
         FROM EMP_POS
         WHERE 생일 IS NOT NULL
     `,
+    selectEmpEmail : `
+        SELECT E.아이디 || '@' || C.표시내용 이메일
+        FROM EMP E, (
+            SELECT 표시내용 
+            FROM CODE 
+            WHERE 
+                사용여부 = 'Y' 
+                AND 코드구분 = '이메일' 
+                AND 코드명 = 0
+        ) C
+        WHERE 
+            E.아이디 = :id
+            AND E.이름 = :name
+    `,
     selectCommonCode : (sort) => {
         return `
             SELECT 코드명, 표시내용 
@@ -22,4 +36,9 @@ module.exports = {
             ORDER BY 코드명 ${sort}
         `
     },
+    updatePassword : `
+        UPDATE EMP 
+        SET 비밀번호 = :pw 
+        WHERE 아이디 = :id
+    `,
 }

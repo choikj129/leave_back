@@ -87,7 +87,7 @@ router.get("/", async (req, res, next) => {
 	} finally {
 		db.close(conn)
 	}
-});
+})
 
 /* 직원 정보 수정 */
 router.patch("/", async (req, res, next) => {
@@ -114,7 +114,7 @@ router.patch("/", async (req, res, next) => {
 	} finally {
 		db.close(conn)
 	}
-});
+})
 
 /* 휴가 신청 기록 */
 router.get("/history", async (req, res, next) => {
@@ -180,7 +180,7 @@ router.put("/", async (req, res, next) => {
 	} finally {
 		db.close(conn)
 	}
-});
+})
 
 /* 직원 삭제 */
 router.delete("/", async (req, res, next) => {

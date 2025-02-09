@@ -1,25 +1,67 @@
 let express = require("express")
 let router = express.Router()
 let log4j = require("../exports/log4j")
-let db = require("../exports/oracle")
 let kakaowork = require("../exports/kakaowork")
 let funcs = require("../exports/functions")
 
-const updatePWSql = "UPDATE EMP SET 비밀번호 = :pw WHERE 아이디 = :id"
+// ${process.db}로 동적으로 하려 했지만 Ctrl 추적이 안돼서 기본 값은 그냥 하드코딩 함
+let db = require("../exports/oracle")
+let commonSql = require("../oracle/sql_common")
+if ((process.db || "oracle") != "oracle") {
+	db = require(`../exports/${process.db}`)
+	commonSql = require(`../${process.db}/sql_common`)
+} 
 
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: 로그인
+ *     tags: [Login]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 example: test
+ *               pw:
+ *                 type: string
+ *                 example: test1234
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: test
+ *                       description: 아이디
+ *                     name:
+ *                       type: string
+ *                       example: 테스트
+ *                       description: 이름
+ */
 router.post("/", async (req, res, next) => {	
 	let conn
 	const userAgent = req.get('User-Agent')
 	try {
 		conn = await db.connection()
-		const pw = funcs.encrypt(req.body.pw)		
-		const sql = `
-			SELECT 아이디, 이름, 관리자여부, 직위코드, 직위
-			FROM EMP_POS E
-			WHERE 아이디 = :id AND 비밀번호 = :pw
-		`
+		const pw = funcs.encrypt(req.body.pw)
 		const params = { id: req.body.id, pw: pw }
-		const result = await db.select(conn, sql, params)
+		const result = await db.select(conn, commonSql.selectEmpInfo, params)
 		if (result.length == 0) {
 			funcs.sendFail(res, "로그인 정보 없음")
 		} else {
@@ -51,7 +93,7 @@ router.patch("/", async (req, res, next) => {
 		conn = await db.connection()
 		const pw = funcs.encrypt(req.body.pw)		
 		const params = { id: req.body.id, pw: pw }
-		const result = await db.update(conn, updatePWSql, params)
+		const result = await db.update(conn, commonSql.updatePassword, params)
 
 		await db.commit(conn)
 		funcs.sendSuccess(res, result)
@@ -69,16 +111,9 @@ router.patch("/reset", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-
-		const sql = `
-			SELECT :id || '@' || 표시내용 이메일
-			FROM EMP, (SELECT 표시내용 FROM CODE WHERE 사용여부 = 'Y' AND 코드구분 = '이메일' AND 코드명 = 0) C
-			WHERE 
-				아이디 = :id
-				AND 이름 = :name
-		`
+		
 		let params = { id : req.body.id, name : req.body.name }
-		const result = await db.select(conn, sql, params)
+		const result = await db.select(conn, commonSql.selectEmpEmail, params)
 		
 		if (result.length == 0) {
 			funcs.sendFail(res, "사용자가 존재하지 않습니다.")
@@ -99,7 +134,7 @@ router.patch("/reset", async (req, res, next) => {
 		const key = funcs.randomChar()
 		const pw = funcs.encrypt(key)
 		params.pw = pw
-		await db.update(conn, updatePWSql, params)
+		await db.update(conn, commonSql.updatePassword, params)
 
 		await kakaowork.sendMessage(`휴가웹 임시 비밀번호\n${key}`, convId)
 		

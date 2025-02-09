@@ -1,7 +1,7 @@
 let db = require("oracledb")
 let log4j = require("./log4j")
 let config = require("./config/db_connect")
-let funcs = require("./functions");
+let funcs = require("./functions")
 const path = require("./config/clientPath")
 /*
     #config format
@@ -27,7 +27,7 @@ db.createPool({
 }, (err, conn) => {
     if (err) {
         log4j.log("createPool() error: " + err.message, "ERROR")
-        return;
+        return
     }
     pool = conn
 })

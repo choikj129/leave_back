@@ -47,7 +47,7 @@ if ((process.db || "oracle") != "oracle") {
  *                       수동여부:
  *                         type: string
  *                         example: N
- *                         description: Y/N
+ *                         description: Y or N
  *                       시작일:
  *                         type: string
  *                         example: 20250101
@@ -129,10 +129,6 @@ router.get("/detail", async (req, res, next) => {
  *             type: array
  *             items:
  *               type: object
- *               required:
- *                 - dateName
- *                 - locdate
- *                 - manualYN
  *               properties:
  *                 dateName:
  *                   type: string
@@ -185,9 +181,6 @@ router.put("/", async (req, res, next) => {
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - name
- *               - year
  *             properties:
  *               name:
  *                 type: string

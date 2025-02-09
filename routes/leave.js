@@ -83,7 +83,8 @@ router.get("/", async (req, res, next) => {
 	} finally {
 		db.close(conn)
 	}
-});
+})
+
 /* 휴가 신청 */
 router.patch("/", async (req, res, next) => {
     let conn
@@ -383,7 +384,7 @@ router.post("/cntExcel", async (req, res, next) => {
         funcs.sendFail(res, e)
         console.error(e)
     } finally {
-        db.close(conn);
+        db.close(conn)
     }
 })
 
@@ -452,7 +453,7 @@ router.patch("/carry-over", async (req, res, next) => {
         funcs.sendFail(res, e)
         console.error(e)
     } finally {
-        db.close(conn);
+        db.close(conn)
     }
 })
 
