@@ -141,9 +141,11 @@ router.get("/code", async (req, res, next) => {
  *                       내용:
  *                         type: string
  *                         example: 어다인 2025년 11월 16일 생일🎉
+ *                         description: 이름 + 년월일 + 생일
  *                       생일:
  *                         type: string
  *                         example: 2025-11-16
+ *                         description: yyyy-mm-dd
  *                       음력여부:
  *                         type: boolean
  *                         example: false
@@ -213,6 +215,24 @@ router.get("/birthday", async (req, res, next) => {
 	}
 })
 
+/**
+ * @swagger
+ * /test:
+ *   post:
+ *     summary: 접속 테스트 용
+ *     tags: [Etc]
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ */
 router.post("/test", async (req, res, next) => {
 	let conn
 	try {

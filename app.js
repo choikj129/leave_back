@@ -82,7 +82,7 @@ app.use("/leave", leaveRouter)
 app.use("/reward", rewardRouter)
 app.use("/users", usersRouter)
 app.use("/cron", cronRouter)
-app.use("/api", apiRouter)
+app.use("/api", apiRouter) // deprecated
 app.use("/holiday", holidayRouter)
 
 // Swagger UI 설정

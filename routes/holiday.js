@@ -4,6 +4,8 @@ let log4j = require("../exports/log4j")
 let db = require("../exports/oracle")
 let funcs = require("../exports/functions")
 
+const sql = require("./sql/sql_holiday")
+
 /**
  * @swagger
  * /holiday:
@@ -40,6 +42,7 @@ let funcs = require("../exports/functions")
  *                       수동여부:
  *                         type: string
  *                         example: N
+ *                         description: Y/N
  *                       시작일:
  *                         type: string
  *                         example: 20250101
@@ -50,19 +53,8 @@ let funcs = require("../exports/functions")
 router.get("/", async (req, res, next) => {
 	let conn
 	try {
-		conn = await db.connection()
-		const sql = `
-			SELECT 
-				명칭,
-				수동여부,
-				TO_CHAR(TO_DATE(MIN(날짜), 'YYYYMMDD'), 'YYYY-MM-DD') 시작일,
-				TO_CHAR(TO_DATE(MAX(날짜), 'YYYYMMDD'), 'YYYY-MM-DD') 종료일
-			FROM HOLIDAY
-			WHERE 날짜 LIKE :year || '%'
-			GROUP BY 명칭, 수동여부
-			ORDER BY 시작일
-		`
-		const result = await db.select(conn, sql, req.query)
+		conn = await db.connection()		
+		const result = await db.select(conn, sql.selectHolidays, req.query)
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
@@ -101,18 +93,13 @@ router.get("/", async (req, res, next) => {
  *                       날짜:
  *                         type: string
  *                         example: 20250101
+ *                         description: yyyymmdd
  */
 router.get("/detail", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()
-		const sql = `
-			SELECT 명칭, 날짜
-			FROM HOLIDAY
-			WHERE 날짜 > TO_CHAR(ADD_MONTHS(SYSDATE, -12), 'YYYY')
-			ORDER BY 날짜		
-		`
-		const result = await db.select(conn, sql, req.query)
+		const result = await db.select(conn, sql.selectDetailHolidays, req.query)
 		funcs.sendSuccess(res, result)
 	} catch (e) {
 		funcs.sendFail(res, e)
@@ -134,17 +121,25 @@ router.get("/detail", async (req, res, next) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - name
- *               - holiday
- *             properties:
- *               name:
- *                 type: string
- *                 example: 대체공휴일
- *               holiday:
- *                 type: string
- *                 example: 20250127
+ *             type: array
+ *             items:
+ *               type: object
+ *               required:
+ *                 - dateName
+ *                 - locdate
+ *                 - manualYN
+ *               properties:
+ *                 dateName:
+ *                   type: string
+ *                   example: 대체공휴일
+ *                 locdate:
+ *                   type: string
+ *                   example: 20250127
+ *                   description: yyyymmdd
+ *                 manualYN:
+ *                   type: string
+ *                   example: Y
+ *                   description: 수동 추가 여부
  *     responses:
  *       200:
  *         content:
@@ -160,12 +155,8 @@ router.get("/detail", async (req, res, next) => {
 router.put("/", async (req, res, next) => {
 	let conn
 	try {
-		conn = await db.connection()		
-		const sql = `
-			INSERT INTO HOLIDAY (명칭, 날짜, 수동여부)
-            VALUES (:name, :holiday, 'Y')
-		`
-		const result = await db.updateBulk(conn, sql, req.body.holidays)
+		conn = await db.connection()
+		const result = await db.updateBulk(conn, sql.updateHoliday, req.body)
         await db.commit(conn)
 		funcs.sendSuccess(res, result)
 	} catch (e) {
@@ -215,13 +206,7 @@ router.delete("/", async (req, res, next) => {
 	let conn
 	try {
 		conn = await db.connection()		
-		const sql = `
-			DELETE FROM HOLIDAY
-			WHERE
-				명칭 = :name
-				AND 날짜 LIKE :year || '%'
-		`
-		const result = await db.update(conn, sql, req.body)
+		const result = await db.update(conn, sql.deleteHoliday, req.body)
         await db.commit(conn)
 		funcs.sendSuccess(res, result)
 	} catch (e) {

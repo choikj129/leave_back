@@ -7,6 +7,8 @@ let holidayKey = require("../exports/config/apiKey").holiday
 let funcs = require("../exports/functions")
 const axios = require("axios")
 
+const holidaySql = require("./sql/sql_holiday")
+
 /* 공휴일 목록 불러오기 */
 const setHoliday = async (year, req, res) => {
 	let conn
@@ -29,6 +31,7 @@ const setHoliday = async (year, req, res) => {
 		
 		let name = ""
 		const params = holiday.data.response.body.items.item.filter(param => {
+			param.manualYN = "N"
 			if (param.dateName == "대체공휴일") {
 				if (!param.dateName.endsWith(")")) param.dateName += `(${name})`
 			} else name = param.dateName
@@ -37,19 +40,7 @@ const setHoliday = async (year, req, res) => {
 		})
 
 		conn = await db.connection()
-		const insertHoliday =`
-			MERGE INTO HOLIDAY H
-			USING DUAL
-				ON (
-					날짜 = :locdate
-				)
-			WHEN MATCHED THEN
-				UPDATE SET 수정일자 = SYSDATE
-			WHEN NOT MATCHED THEN
-				INSERT (명칭, 날짜)
-				VALUES (:dateName, :locdate)
-		`
-		const result = await db.updateBulk(conn, insertHoliday, params)
+		const result = await db.updateBulk(conn, holidaySql.updateHoliday, params)
 		await db.commit(conn)
 		req ? funcs.sendSuccess(res, result) : log4j.log("공휴일 등록 완료")
 
@@ -96,7 +87,33 @@ const setCarryOver = async (res) => {
 	}
 }
 
-router.get("/holiday", async (req, res, next) => {
+/**
+ * @swagger
+ * /cron/holiday:
+ *   put:
+ *     summary: 공공 데이터 공휴일 세팅.
+ *     description: cron에서 실행되는 것을 수동으로 실행
+ *     tags: [Holiday]
+ *     parameters:
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: string
+ *           example: 2025
+ *         description: 미 입력 시 올해년도
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                 msg:
+ *                   type: string
+ */
+router.put("/holiday", async (req, res, next) => {
 	const year = !req.query.year ? new Date().getFullYear() : req.query.year
 	setHoliday(year, req, res)
 })
