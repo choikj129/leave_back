@@ -6,11 +6,11 @@ let path = require("path")
 let cookieParser = require("cookie-parser")
 // let morgan = require("morgan")
 let log4j = require("./exports/log4j")
-let helmet = require("helmet");
+let helmet = require("helmet")
 let interceptor = require("./exports/interceptor")
 
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpecs = require('./swagger/swagger.js');
+const swaggerUi = require('swagger-ui-express')
+const swaggerSpecs = require('./swagger/swagger.js')
 
 if (process.argv.slice(2) && process.argv.slice(2)[0] == "maria") {
 	log4j.log("Use Maria DB", "INFO")
@@ -78,14 +78,15 @@ app.use("/cron", cronRouter)
 app.use("/api", apiRouter) // deprecated
 app.use("/holiday", holidayRouter)
 
-// Swagger UI 설정
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
 	explorer: true,
 	swaggerOptions: {
-	  tryItOutEnabled: true,
-	  tagsSorter: "alpha",
+		tryItOutEnabled: true,
+		tagsSorter: "alpha",
+		apisSorter: 'alpha',
+		operationsSorter: "method",
 	},
-}));
+}))
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
@@ -93,8 +94,8 @@ app.use((req, res, next) => {
 })
 
 app.get((req, res) => {
-	res.status(404).send('not found');
-});
+	res.status(404).send('not found')
+})
 
 // error handler
 app.use((err, req, res, next) => {
