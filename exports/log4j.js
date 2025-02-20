@@ -9,6 +9,7 @@ const conf = {
             filename: `${path}/leave_back.log`,
             pattern: 'yyyy-MM-dd',
             keepFileExt: true,
+            numBackups: 14,
             layout: {
                 type: 'pattern',
                 pattern: '[%d{yyyy-MM-dd hh:mm:ss.SSS}] %m',
