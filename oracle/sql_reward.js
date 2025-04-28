@@ -22,7 +22,7 @@ module.exports = {
     },
     selectRewardCnt : (type) => {
         return `
-            SELECT NVL(SUM(휴가일수), 0) 휴가일수, NVL(SUM(사용일수), 0) 사용일수
+            SELECT NVL(휴가일수, 0) 휴가일수, NVL(사용일수, 0) 사용일수, 만료일
             FROM REWARD
             WHERE
                 아이디 = :id
