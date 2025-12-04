@@ -57,15 +57,29 @@ app.use(
 
 app.use((req, res, next) => {
 	const isSession = interceptor.session(req)
-	log4j.log(`${req.method} ${req._parsedOriginalUrl.path}`, "INFO")
-	if (isSession
-		|| req._parsedOriginalUrl.path.startsWith("/login")
-		|| req._parsedOriginalUrl.path.startsWith("/cron")
-		|| req._parsedOriginalUrl.path.endsWith("/test")
-	) {
-		next()
-	} else {
-		res.json({ status: false, msg: "no session", data: [] })
+	try {
+		if (isSession && (
+			(req.query?.id != undefined && req.query.id != req.session.user.id)
+			|| (req.body?.id != undefined && req.body.id != req.session.user.id)
+		)) {
+			res.json({ status: false, msg: "not match session", data: [] })
+
+			return
+		}
+		
+		if (isSession
+			|| req._parsedOriginalUrl.path.startsWith("/login")
+			|| req._parsedOriginalUrl.path.startsWith("/cron")
+			|| req._parsedOriginalUrl.path.endsWith("/test")
+		) {
+			next()
+		} else {
+			res.json({ status: false, msg: "no session", data: [] })
+
+			return
+		}
+	} catch(e) {
+		log4j.log(e)
 	}
 })
 
