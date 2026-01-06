@@ -58,7 +58,7 @@ app.use(
 app.use((req, res, next) => {
 	const isSession = interceptor.session(req)
 	try {
-		if (isSession && (
+		if (isSession && !req.session.user.isManager && (
 			(req.query?.id != undefined && req.query.id != req.session.user.id)
 			|| (req.body?.id != undefined && req.body.id != req.session.user.id)
 		)) {
