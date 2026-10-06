@@ -67,6 +67,12 @@ const check = async (jobs, now = new Date()) => {
 module.exports = {
     check,
     readState,
+    /* 실행 이력 외 상태 값 변경 (알림 전송 여부 등) */
+    updateState : (fn) => {
+        const state = readState()
+        fn(state)
+        writeState(state)
+    },
     start : (jobs) => {
         cron.schedule("0 */10 * * * *", () => check(jobs))
         check(jobs)

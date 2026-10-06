@@ -6,6 +6,7 @@ let holidayKey = require("../exports/config/apiKey").holiday
 let funcs = require("../exports/functions")
 let snapshot = require("../exports/snapshot")
 let cronJob = require("../exports/cronJob")
+let kakaowork = require("../exports/kakaowork")
 let moment = require("moment")
 const axios = require("axios")
 
@@ -24,6 +25,28 @@ if ((process.db || "oracle") != "oracle") {
 	commit은 db.commit()이 오류를 무시하므로 conn.commit() 직접 호출
 */
 
+/*
+	공공데이터포털 서비스키 오류(401) 알림 : 단체방에 최초 1회만 전송 (재시작해도 재전송 안 함)
+	API 호출 성공 시 전송 이력 초기화 → 이후 다시 만료되면 다시 1회 전송
+*/
+const KEY_ERROR_NOTICE = "notice-holidayKeyError"
+const noticeHolidayKeyError = async (e) => {
+	if (e.response?.status != 401 || cronJob.readState()[KEY_ERROR_NOTICE]) return
+	const reason = e.response.data?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnAuthMsg
+	try {
+		const isSend = await kakaowork.sendMessage(
+			"[휴가 관리] 공공데이터포털 API 키 만료 알림\n" +
+			"공휴일 자동 등록이 실패하고 있습니다." + (reason ? ` (${reason})` : "") + "\n" +
+			"data.go.kr에서 활용 기간 연장 또는 재발급 후 서버의 API 키를 교체해주세요."
+		)
+		if (!isSend) return
+		cronJob.updateState(state => state[KEY_ERROR_NOTICE] = { at : moment().format("YYYY-MM-DD HH:mm:ss") })
+		log4j.log("공공데이터포털 API 키 오류 알림 전송")
+	} catch (err) {
+		log4j.log(`공공데이터포털 API 키 오류 알림 전송 실패 : ${err}`, "ERROR")
+	}
+}
+
 /* 공휴일 목록 불러오기 */
 const setHoliday = async (year) => {
 	log4j.log(`${year}년 공휴일 등록 시작`)
@@ -32,12 +55,19 @@ const setHoliday = async (year) => {
 	const _type = 'json'
 	const url = `http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo?numOfRows=${numOfRows}&_type=${_type}&solYear=${year}&ServiceKey=${holidayKey}`
 
-	let holiday = await axios.get(url, {
-		headers : {
-			'Content-type': 'application/json;charset=UTF-8',
-			'Accept': '*/*'
-		}
-	})
+	let holiday
+	try {
+		holiday = await axios.get(url, {
+			headers : {
+				'Content-type': 'application/json;charset=UTF-8',
+				'Accept': '*/*'
+			}
+		})
+	} catch (e) {
+		await noticeHolidayKeyError(e)
+		throw e
+	}
+	if (cronJob.readState()[KEY_ERROR_NOTICE]) cronJob.updateState(state => delete state[KEY_ERROR_NOTICE])
 
 	let name = ""
 	const params = holiday.data.response.body.items.item.filter(param => {
