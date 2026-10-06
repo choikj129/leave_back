@@ -19,7 +19,7 @@ db.initOracleClient({ libDir: path })
 db.outFormat = db.OUT_FORMAT_OBJECT
 
 /* DB 서버 장애 시 응답 없이 대기하므로 접속 시간 제한 (ms) */
-const CONNECT_TIMEOUT = 5000
+const CONNECT_TIMEOUT = 3000
 /*
     장애 감지 후 재시도 간격 (ms)
     접속 시도는 시간 제한 후에도 드라이버 타임아웃(약 20초 이상)까지 libuv 스레드풀(기본 4개)을 점유하고,
