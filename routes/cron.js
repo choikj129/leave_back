@@ -19,10 +19,7 @@ if ((process.db || "oracle") != "oracle") {
 	rewardSql = require(`../${process.db}/sql_reward`)
 } 
 
-/*
-	정기 작업은 실패 시 재시도되므로 실패하면 throw
-	commit은 db.commit()이 오류를 무시하므로 conn.commit() 직접 호출
-*/
+/* 정기 작업은 실패 시 재시도되므로 실패하면 throw (db.withTransaction : 실패 시 롤백 후 예외 전달) */
 
 /* 공휴일 목록 불러오기 */
 const setHoliday = async (year) => {
@@ -49,37 +46,17 @@ const setHoliday = async (year) => {
 		return param.isHoliday == "N" ? false : true
 	})
 
-	let conn
-	try {
-		conn = await db.connection()
-		const result = await db.updateBulk(conn, holidaySql.updateHoliday, params)
-		await conn.commit()
-		log4j.log(`${year}년 공휴일 등록 완료`)
-		return result
-	} catch (e) {
-		if (conn) await db.rollback(conn)
-		throw e
-	} finally {
-		if (conn) db.close(conn)
-	}
+	const result = await db.withTransaction((conn) => db.updateBulk(conn, holidaySql.updateHoliday, params))
+	log4j.log(`${year}년 공휴일 등록 완료`)
+	return result
 }
 
 /* 남은 포상, 리프레시 휴가 이월 (이미 이월된 건은 제외되므로 재실행 가능) */
 const setCarryOver = async (year) => {
 	log4j.log(`${year}년 남은 포상, 리프레시 휴가 이월 시작`)
-	let conn
-	try {
-		conn = await db.connection()
-		const result = await db.update(conn, rewardSql.carryOverRewrad(year), {})
-		await conn.commit()
-		log4j.log(`${year}년 남은 포상, 리프레시 휴가 이월 완료 (${result}건)`)
-		return result
-	} catch (e) {
-		if (conn) await db.rollback(conn)
-		throw e
-	} finally {
-		if (conn) db.close(conn)
-	}
+	const result = await db.withTransaction((conn) => db.update(conn, rewardSql.carryOverRewrad(year), {}))
+	log4j.log(`${year}년 남은 포상, 리프레시 휴가 이월 완료 (${result}건)`)
+	return result
 }
 
 /* 수동 실행 API 응답 */

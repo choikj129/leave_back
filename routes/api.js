@@ -33,29 +33,19 @@ if ((process.db || "oracle") != "oracle") {
  *                       KEY:
  *                         type: string
  */
-router.get("/code", async (req, res, next) => {
-	let  conn 
-		try {
-			conn = await db.connection()
-			const sql = `
-				SELECT 표시내용 KEY 
-				FROM CODE 
-				WHERE 
-					코드구분 = '공공데이터키' 
-					AND 사용여부 = 'Y' 
-				ORDER BY 코드명
-			`
-			const rows = await db.select(conn, sql, {})
-			console.log(rows)
-			funcs.sendSuccess(res, rows)
-		} catch (e){
-			db.rollback(conn)
-			console.error(e)
-			funcs.sendFail(res, e)
-		} finally {
-			db.close(conn)
-	}
-})
+router.get("/code", db.transaction(async (req, res, conn) => {
+	const sql = `
+		SELECT 표시내용 KEY
+		FROM CODE
+		WHERE
+			코드구분 = '공공데이터키'
+			AND 사용여부 = 'Y'
+		ORDER BY 코드명
+	`
+	const rows = await db.select(conn, sql, {})
+	console.log(rows)
+	return rows
+}, { readOnly: true }))
 
 
 /**
@@ -86,33 +76,21 @@ router.get("/code", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.patch('/update', async (req, res, next) => {
-	const param = req.body
+router.patch('/update', (req, res, next) => {
 	// 키 값 없을 시 실행 안함
-	if(param.key == undefined || param.key === ""){
+	if(req.body.key == undefined || req.body.key === ""){
 		funcs.sendFail(res, "key값 없음")
 		return
 	}
+	next()
+}, db.transaction(async (req, res, conn) => {
 	const sql = `
 		UPDATE CODE SET
 			표시내용 = :key
 		WHERE
 		코드구분 = '공공데이터키'
 	`
-	const updParam = {key:param.key}
-	let conn
-	try {
-		conn = await db.connection()
-		const rows = await db.update(conn, sql, updParam)
-		await db.commit(conn)
-		funcs.sendSuccess(res, rows)
-	} catch (e){
-		await db.rollback(conn)
-		console.error(e)
-		funcs.sendFail(res, e)
-	} finally {
-		db.close(conn)
-	}
-})
+	return await db.update(conn, sql, {key:req.body.key})
+}))
 
 module.exports = router

@@ -110,29 +110,17 @@ if ((process.db || "oracle") != "oracle") {
  *                     type: int
  *                     example: 1
  */
-router.get("/", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-
-		let params = {year : req.query.year}
-		let whereId = ""
-		const userSession = req.session.user
-		if (!userSession.isManager) {
-			whereId = "AND E.아이디 = :id"
-			params.id = userSession.id
-		}
-		
-		const result = await db.select(conn, usersSql.selectUsersInfo(whereId), params)
-
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
+router.get("/", db.transaction(async (req, res, conn) => {
+	let params = {year : req.query.year}
+	let whereId = ""
+	const userSession = req.session.user
+	if (!userSession.isManager) {
+		whereId = "AND E.아이디 = :id"
+		params.id = userSession.id
 	}
-})
+
+	return await db.select(conn, usersSql.selectUsersInfo(whereId), params)
+}, { readOnly: true }))
 
 /**
  * @swagger
@@ -178,22 +166,9 @@ router.get("/", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.patch("/", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()		
-		const result = await db.update(conn, usersSql.updateUserInfo, req.body)
-
-		await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		await db.rollback(conn)
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.patch("/", db.transaction(async (req, res, conn) => {
+	return await db.update(conn, usersSql.updateUserInfo, req.body)
+}))
 
 /**
  * @swagger
@@ -242,23 +217,12 @@ router.patch("/", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.put("/", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		req.body.isLunar = req.body.isLunar ? "Y" : "N"
-		const result = await db.update(conn, usersSql.insertUser, req.body)
-
-		await db.commit(conn)
-		result == 0 ? funcs.sendFail(res, "중복된 아이디입니다.") : funcs.sendSuccess(res, result)		
-	} catch(e) {
-		await db.rollback(conn)
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.put("/", db.transaction(async (req, res, conn) => {
+	req.body.isLunar = req.body.isLunar ? "Y" : "N"
+	const result = await db.update(conn, usersSql.insertUser, req.body)
+	if (result == 0) throw "중복된 아이디입니다."
+	return result
+}))
 
 /**
  * @swagger
@@ -288,22 +252,9 @@ router.put("/", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.delete("/", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		const result = await db.update(conn, usersSql.deleteUser, req.body)
-
-		await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		await db.rollback(conn)
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.delete("/", db.transaction(async (req, res, conn) => {
+	return await db.update(conn, usersSql.deleteUser, req.body)
+}))
 
 /**
  * @swagger
@@ -366,34 +317,24 @@ router.delete("/", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.put("/insertExcelUsers", async (req, res, next) => {
-	let conn
-	try {
-		const requestUsersSize = req.body.length
-		conn = await db.connection()
+router.put("/insertExcelUsers", db.transaction(async (req, res, conn) => {
+	const requestUsersSize = req.body.length
 
-		console.log(req.body)
-		const result = await db.multiUpdateBulk(conn, {
-			insertUsers : {query : usersSql.insertUser, params: req.body}, 
-			insertLeaveCnt : {query : leaveSql.updateLeaveCnt, params: req.body}, 
-		})
+	console.log(req.body)
+	const result = await db.multiUpdateBulk(conn, {
+		insertUsers : {query : usersSql.insertUser, params: req.body},
+		insertLeaveCnt : {query : leaveSql.updateLeaveCnt, params: req.body},
+	})
 
-		const acceptUsersSize = result.insertUsers
+	const acceptUsersSize = result.insertUsers
 
-		
-		if (acceptUsersSize != requestUsersSize) {
-			throw `\n입력 직원 수 = ${requestUsersSize}\nDB 적재 건수 = ${acceptUsersSize}\n사유 : 중복아이디 혹은 기타 알 수 없는 이유\nDB 롤백 진행.`
-		}
-		
-		await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		await db.rollback(conn)
-		funcs.sendFail(res, e)
-		log4j.log(e, "ERROR")
-	} finally {
-		db.close(conn)
+	if (acceptUsersSize != requestUsersSize) {
+		const msg = `\n입력 직원 수 = ${requestUsersSize}\nDB 적재 건수 = ${acceptUsersSize}\n사유 : 중복아이디 혹은 기타 알 수 없는 이유\nDB 롤백 진행.`
+		log4j.log(msg, "ERROR")
+		throw msg
 	}
-})
+
+	return result
+}))
 
 module.exports = router
