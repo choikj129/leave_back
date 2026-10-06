@@ -66,21 +66,10 @@ if ((process.db || "oracle") != "oracle") {
  *                     example: 1
  *                     description: 정렬을 위해 공통코드에 정의된 순위
  */
-router.get("/", async (req, res, next) => {
-    const id = req.query.id
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.select(conn, leaveSql.selectLeaveInfo(id), { id: id })
-
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.get("/", db.transaction(async (req, res, conn) => {
+	const id = req.query.id
+	return await db.select(conn, leaveSql.selectLeaveInfo(id), { id: id })
+}, { readOnly: true }))
 
 /**
  * @swagger
@@ -152,10 +141,7 @@ router.get("/", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.patch("/", async (req, res, next) => {
-    let conn
-	try {
-		conn = await db.connection()
+router.patch("/", db.transaction(async (req, res, conn) => {
         let params = req.body.events
         const id = req.session.user.isManager ? req.body.id : req.session.user.id
         const name = req.session.user.isManager ? req.body.name : req.session.user.name
@@ -176,7 +162,7 @@ router.patch("/", async (req, res, next) => {
             const seq = seqResult[0].SEQ
             dbHash.history.params.push({id : id, name : param.name})
             if (param.updateType == "I") {
-                /* LEAVE_SUMMARY INSERT */                
+                /* LEAVE_SUMMARY INSERT */
                 dbHash.insertLeave.params.push({
                     seq: seq,
                     name: param.name,
@@ -185,10 +171,10 @@ router.patch("/", async (req, res, next) => {
                     cnt: param.cnt,
                     id: id,
                     updateReward : param.updateReward
-                })                                
+                })
                 /* LEAVE_DETAIL INSERT */
                 let date = new Date(param.startDate)
-                for (j = 0; j < param.cnt; j++) {
+                for (let j = 0; j < param.cnt; j++) {
                     const year = date.getFullYear()
                     const month = date.getMonth() + 1 < 10 ? "0" + (date.getMonth() + 1) : date.getMonth() + 1
                     const day = date.getDate() < 10 ? "0" + (date.getDate()) : date.getDate()
@@ -202,10 +188,7 @@ router.patch("/", async (req, res, next) => {
                     date.setDate(date.getDate() + 1)
                 }
             } else if (param.updateType == "D") {
-                if (!param.IDX) {
-                    funcs.sendFail(res, "휴가 취소 실패. 유효하지 않은 IDX")
-                    return
-                }
+                if (!param.IDX) throw "휴가 취소 실패. 유효하지 않은 IDX"
                 /* LEAVE_SUMMARY & LEAVE_DETAIL DELETE */
                 // swagger로 쐈을 때 밸리데이션
                 if (!param.name.endsWith("취소")) param.name += " 취소"
@@ -227,98 +210,34 @@ router.patch("/", async (req, res, next) => {
         await db.multiUpdateBulk(conn, dbHash)
 
         const contents = `${req.session.user.isManager? "(관리자) " : ""}${name}\n${kakaoWorkArr.sort().join("\n")}`
-        const isSend = await kakaowork.sendMessage(contents)
-        if (isSend) {
-            funcs.sendSuccess(res, [], "카카오워크 전송 성공")
-            await db.commit(conn)
-        } else {
-            funcs.sendFail(res, "카카오워크 전송 실패")
-            await db.rollback(conn)
-        }
-	} catch(e) {
-		await db.rollback(conn)
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+        if (!await kakaowork.sendMessage(contents)) throw "카카오워크 전송 실패"
+
+        res.locals.msg = "카카오워크 전송 성공"
+}))
 
 /* 휴가 리스트 */
-router.get("/lists", async (req, res, next) => {
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.select(conn, leaveSql.selectUseLeaveInfo, {
-            id : req.query.id,
-            year : req.query.year
-        })
+router.get("/lists", db.transaction(async (req, res, conn) => {
+	return await db.select(conn, leaveSql.selectUseLeaveInfo, {
+		id : req.query.id,
+		year : req.query.year
+	})
+}, { readOnly: true }))
 
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
 /* 사이트 접속 (휴가 상세 목록) */
-router.get("/cnts", async (req, res, next) => {
-    const id = req.query.id
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.select(conn, leaveSql.selectLeaveCnts, { id: id })
-
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.get("/cnts", db.transaction(async (req, res, conn) => {
+	return await db.select(conn, leaveSql.selectLeaveCnts, { id: req.query.id })
+}, { readOnly: true }))
 
 /* 휴가 신청 기록 */
-router.get("/history", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		const result = await db.select(conn, leaveSql.selectLeaveHistory, {})
+router.get("/history", db.transaction(async (req, res, conn) => {
+	return await db.select(conn, leaveSql.selectLeaveHistory, {})
+}, { readOnly: true }))
 
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.patch("/cnt", db.transaction(async (req, res, conn) => {
+	return await db.select(conn, leaveSql.updateLeaveCnt, req.body)
+}))
 
-router.patch("/cnt", async (req, res, next) => {
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.select(conn, leaveSql.updateLeaveCnt, req.body)
-
-		await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		await db.rollback(conn)
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
-
-router.post("/cntExcel", async (req, res, next) => {
-    let conn
-    try {        
-        const result = {
-            successCount : 0,
-        }
-
+router.post("/cntExcel", db.transaction(async (req, res, conn) => {
         let reqUsers = []
         let updateSql = leaveSql.updateLeaveCnt
         if (req.body.isReward) {
@@ -350,45 +269,20 @@ router.post("/cntExcel", async (req, res, next) => {
         } else reqUsers = req.body.users
 
         const requestUserLength = reqUsers.length
-
-        conn = await db.connection()
         const successCount = await db.updateBulk(conn, updateSql, reqUsers)
-        
+
         if (successCount != requestUserLength) {
             throw `\n입력 직원 수 = ${requestUserLength}\nDB 적재 건수 = ${successCount}\n사유 : 아이디가 존재하지 않거나 기타 이유를 알 수 없는 사유\nDB 롤백 진행`
         }
 
-        result.successCount = successCount
-        
-        await db.commit(conn)
-        funcs.sendSuccess(res, result)
-    } catch (e) {
-        await db.rollback(conn)
-        funcs.sendFail(res, e)
-        console.error(e)
-    } finally {
-        db.close(conn)
-    }
-})
+        return { successCount : successCount }
+}))
 
-router.patch("/carry-over", async (req, res, next) => {
-    let conn
-    try {
-        conn = await db.connection()
-        await db.update(conn, leaveSql.carryOverLeave(req.body.isAllCarry), {
-            thisYear : req.body.year,
-            lastYear : req.body.year - 1,
-        })
-        
-        await db.commit(conn)
-        funcs.sendSuccess(res)
-    } catch (e) {
-        await db.rollback(conn)
-        funcs.sendFail(res, e)
-        console.error(e)
-    } finally {
-        db.close(conn)
-    }
-})
+router.patch("/carry-over", db.transaction(async (req, res, conn) => {
+	await db.update(conn, leaveSql.carryOverLeave(req.body.isAllCarry), {
+		thisYear : req.body.year,
+		lastYear : req.body.year - 1,
+	})
+}))
 
 module.exports = router

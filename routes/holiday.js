@@ -55,19 +55,9 @@ if ((process.db || "oracle") != "oracle") {
  *                         type: string
  *                         example: 20250101
  */
-router.get("/", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		const result = await db.select(conn, holidaySql.selectHolidays, req.query)
-		funcs.sendSuccess(res, result)
-	} catch (e) {
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.get("/", db.transaction(async (req, res, conn) => {
+	return await db.select(conn, holidaySql.selectHolidays, req.query)
+}, { readOnly: true }))
 
 /**
  * @swagger
@@ -100,19 +90,9 @@ router.get("/", async (req, res, next) => {
  *                         example: 20250101
  *                         description: yyyymmdd
  */
-router.get("/detail", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		const result = await db.select(conn, holidaySql.selectDetailHolidays, req.query)
-		funcs.sendSuccess(res, result)
-	} catch (e) {
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.get("/detail", db.transaction(async (req, res, conn) => {
+	return await db.select(conn, holidaySql.selectDetailHolidays, req.query)
+}, { readOnly: true }))
 
 /**
  * @swagger
@@ -153,20 +133,9 @@ router.get("/detail", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.put("/", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		const result = await db.updateBulk(conn, holidaySql.updateHoliday, req.body)
-        await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch (e) {
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.put("/", db.transaction(async (req, res, conn) => {
+	return await db.updateBulk(conn, holidaySql.updateHoliday, req.body)
+}))
 
 /**
  * @swagger
@@ -200,19 +169,8 @@ router.put("/", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.delete("/", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()		
-		const result = await db.update(conn, holidaySql.deleteHoliday, req.body)
-        await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch (e) {
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.delete("/", db.transaction(async (req, res, conn) => {
+	return await db.update(conn, holidaySql.deleteHoliday, req.body)
+}))
 
 module.exports = router
