@@ -8,6 +8,7 @@ let cookieParser = require("cookie-parser")
 let log4j = require("./exports/log4j")
 let helmet = require("helmet")
 let interceptor = require("./exports/interceptor")
+let snapshot = require("./exports/snapshot")
 
 const swaggerUi = require('swagger-ui-express')
 const swaggerSpecs = require('./swagger/swagger.js')
@@ -27,6 +28,8 @@ let apiRouter = require("./routes/api")
 let holidayRouter = require("./routes/holiday")
 
 let app = express()
+// API 응답 캐시(304) 미사용 : DB 응답과 스냅샷 응답 본문이 같으면 304로 캐시된 응답의 스냅샷 헤더가 재사용됨
+app.set("etag", false)
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"))
@@ -82,6 +85,9 @@ app.use((req, res, next) => {
 		log4j.log(e)
 	}
 })
+
+/* DB 장애 시 사용자(관리자 제외) 요청은 스냅샷으로 조회만 처리 */
+app.use(snapshot.middleware)
 
 app.use("/", indexRouter)
 app.use("/login", loginRouter)

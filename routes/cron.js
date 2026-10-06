@@ -4,6 +4,7 @@ let cron = require("node-cron")
 let log4j = require("../exports/log4j")
 let holidayKey = require("../exports/config/apiKey").holiday
 let funcs = require("../exports/functions")
+let snapshot = require("../exports/snapshot")
 let cronJob = require("../exports/cronJob")
 let moment = require("moment")
 const axios = require("axios")
@@ -147,5 +148,13 @@ cronJob.start([
 		run : (now) => setCarryOver(now.getFullYear()),
 	},
 ])
+
+cron.schedule("0 0 * * * *", async () => {
+	// 매시 정각 DB 장애 대비 스냅샷 생성
+	snapshot.create()
+})
+
+// 서버 기동 시 스냅샷이 없으면 생성
+if (!snapshot.exists()) snapshot.create()
 
 module.exports = router
