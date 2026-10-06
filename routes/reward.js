@@ -88,20 +88,9 @@ if ((process.db || "oracle") != "oracle") {
  *                         example: 1
  *                         description: 이월된 row의 idx
  */
-router.get("/", async (req, res, next) => {
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.select(conn, rewardSql.selectEmpReward, req.query)
-
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.get("/", db.transaction(async (req, res, conn) => {
+	return await db.select(conn, rewardSql.selectEmpReward, req.query)
+}, { readOnly: true }))
 
 /**
  * @swagger
@@ -151,24 +140,9 @@ router.get("/", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.put("/", async (req, res, next) => {
-	if (!funcs.checkOnlyManagerUrl(req, res)) return 
-
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.update(conn, rewardSql.insertReward, req.body)
-        
-        await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-        await db.rollback(conn)
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.put("/", funcs.onlyManager, db.transaction(async (req, res, conn) => {
+	return await db.update(conn, rewardSql.insertReward, req.body)
+}))
 
 /**
  * @swagger
@@ -206,24 +180,9 @@ router.put("/", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.patch("/", async (req, res, next) => {
-	if (!funcs.checkOnlyManagerUrl(req, res)) return 
-
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.update(conn, rewardSql.updateReward, req.body)
-        
-        await db.commit(conn)
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-        await db.rollback(conn)
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.patch("/", funcs.onlyManager, db.transaction(async (req, res, conn) => {
+	return await db.update(conn, rewardSql.updateReward, req.body)
+}))
 
 /**
  * @swagger
@@ -255,24 +214,11 @@ router.patch("/", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.delete("/", async (req, res, next) => {
-	if (!funcs.checkOnlyManagerUrl(req, res)) return 
-
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.update(conn, rewardSql.deleteReward, req.body)
-
-        await db.commit(conn)
-        result == 0 ? funcs.sendFail(res, "이미 사용한 휴가는 삭제할 수 없습니다.") : funcs.sendSuccess(res, result)        
-	} catch(e) {
-        await db.rollback(conn)
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}	
-})
+router.delete("/", funcs.onlyManager, db.transaction(async (req, res, conn) => {
+	const result = await db.update(conn, rewardSql.deleteReward, req.body)
+	if (result == 0) throw "이미 사용한 휴가는 삭제할 수 없습니다."
+	return result
+}))
 
 /**
  * @swagger
@@ -388,23 +334,12 @@ router.delete("/", async (req, res, next) => {
  *                              example: 1
  *                              description: 이월된 row의 idx
  */
-router.get("/user", async (req, res, next) => {
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.multiSelect(conn, {
-            reward : { query : rewardSql.selectReward("포상"), params : req.query },
-            refresh : { query : rewardSql.selectReward("리프레시"), params : req.query },
-        })
-
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.get("/user", db.transaction(async (req, res, conn) => {
+	return await db.multiSelect(conn, {
+		reward : { query : rewardSql.selectReward("포상"), params : req.query },
+		refresh : { query : rewardSql.selectReward("리프레시"), params : req.query },
+	})
+}, { readOnly: true }))
 /**
  * @swagger
  * /reward/cnts:
@@ -469,21 +404,10 @@ router.get("/user", async (req, res, next) => {
  *                              example: 3
  *                              description: 사용한 휴가 일 수
  */
-router.get("/cnts", async (req, res, next) => {
-    let conn
-	try {
-		conn = await db.connection()
-		const result = await db.multiSelect(conn, {
-            reward : { query : rewardSql.selectRewardCnt("포상"), params : req.query },
-            refresh : { query : rewardSql.selectRewardCnt("리프레시"), params : req.query },
-        })
-
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-        console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.get("/cnts", db.transaction(async (req, res, conn) => {
+	return await db.multiSelect(conn, {
+		reward : { query : rewardSql.selectRewardCnt("포상"), params : req.query },
+		refresh : { query : rewardSql.selectRewardCnt("리프레시"), params : req.query },
+	})
+}, { readOnly: true }))
 module.exports = router

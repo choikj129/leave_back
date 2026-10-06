@@ -288,4 +288,44 @@ module.exports = {
             log4j.log("Rollback error", "ERROR")
         }
     },
+    /*
+        트랜잭션 처리 (Spring @Transactional 역할)
+        커넥션 획득 → fn(conn) 실행 → 커밋 (예외 시 롤백) → 커넥션 반납
+        - readOnly : 커밋/롤백 생략 (조회 전용)
+        - commit은 db.commit()과 달리 실패 시 예외 발생 (롤백 처리)
+    */
+    withTransaction: async (fn, { readOnly = false } = {}) => {
+        const oracle = module.exports
+        const conn = await oracle.connection()
+        try {
+            const result = await fn(conn)
+            if (!readOnly) {
+                await conn.commit()
+                log4j.log("DB commit", "INFO")
+            }
+            return result
+        } catch (e) {
+            checkDisconnect(e)
+            if (!readOnly) await oracle.rollback(conn)
+            throw e
+        } finally {
+            oracle.close(conn)
+        }
+    },
+    /*
+        라우터 핸들러용 트랜잭션
+        router.get("/", db.transaction(async (req, res, conn) => { ... }, { readOnly: true }))
+        - return 값 : 성공 응답 data
+        - throw : 롤백 후 실패 응답 (문자열 throw 시 해당 메시지로 응답)
+        - res.locals.msg : 성공 응답 메시지
+    */
+    transaction: (handler, options) => async (req, res, next) => {
+        try {
+            const data = await module.exports.withTransaction((conn) => handler(req, res, conn), options)
+            funcs.sendSuccess(res, data ?? [], res.locals.msg)
+        } catch (e) {
+            console.error(e)
+            funcs.sendFail(res, e)
+        }
+    },
 }

@@ -50,6 +50,10 @@ module.exports = {
 
         return false
     },
+    /* 관리자 전용 API 미들웨어 : router.put("/", funcs.onlyManager, ...) */
+    onlyManager : (req, res, next) => {
+        if (module.exports.checkOnlyManagerUrl(req, res)) next()
+    },
     replaceQuery : (query, params) => {
         /* 쿼리에 :key를 치환 */
         Object.entries(params).forEach((param) => {

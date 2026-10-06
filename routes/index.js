@@ -100,20 +100,10 @@ router.get("/download", (req, res, next) => {
  *                         type: string
  *                         example: 관리자
  */
-router.get("/code", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		const sort = req.query.reverse != undefined && req.query.reverse ? "DESC" : "ASC"
-		const result = await db.select(conn, commonSql.selectCommonCode(sort), {name : req.query.name})
-		funcs.sendSuccess(res, result)
-	} catch (e) {
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.get("/code", db.transaction(async (req, res, conn) => {
+	const sort = req.query.reverse != undefined && req.query.reverse ? "DESC" : "ASC"
+	return await db.select(conn, commonSql.selectCommonCode(sort), {name : req.query.name})
+}, { readOnly: true }))
 
 /**
  * @swagger
@@ -150,20 +140,10 @@ router.get("/code", async (req, res, next) => {
  *                         type: boolean
  *                         example: false
  */
-router.get("/birthday", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		const result = await db.select(conn, commonSql.selectEmpBirthday, {})
-		const birthdays = await funcs.makeBirthdays(result)
-		funcs.sendSuccess(res, birthdays)
-	} catch (e) {
-		console.error(e)
-		funcs.sendFail(res, e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.get("/birthday", db.transaction(async (req, res, conn) => {
+	const result = await db.select(conn, commonSql.selectEmpBirthday, {})
+	return await funcs.makeBirthdays(result)
+}, { readOnly: true }))
 
 /**
  * @swagger
@@ -183,18 +163,8 @@ router.get("/birthday", async (req, res, next) => {
  *                 msg:
  *                   type: string
  */
-router.post("/test", async (req, res, next) => {
-	let conn
-	try {
-		conn = await db.connection()
-		result = []
-		funcs.sendSuccess(res, result)
-	} catch(e) {
-		funcs.sendFail(res, e)
-		console.error(e)
-	} finally {
-		db.close(conn)
-	}
-})
+router.post("/test", db.transaction(async (req, res, conn) => {
+	return []
+}, { readOnly: true }))
 
 module.exports = router
