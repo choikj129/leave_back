@@ -101,10 +101,10 @@ module.exports = {
                 for (let n=-1; n<2; n++) {
                     let solar
                     try {
-                        solar = await holidayKR.getSolar(year + n, month, day, true)
+                        solar = await holidayKR.getSolar(year + n, month, day, false)
                     } catch {
                         try {
-                            solar = await holidayKR.getSolar(year + n, month, day, false)
+                            solar = await holidayKR.getSolar(year + n, month, day, true)
                         } catch {}
                     } finally {
                         if (solar) {
