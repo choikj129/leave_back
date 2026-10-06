@@ -76,11 +76,19 @@ module.exports = {
 				IDX, 아이디, 휴가유형, 휴가일수, 등록일, 만료일, 사용일수, 기준연도, ROOT_IDX
 			)
 			SELECT SEQ_REWARD.NEXTVAL, 아이디, 휴가유형, 휴가일수 - 사용일수, 등록일, 만료일, 0, ${year}, IDX
-			FROM REWARD
-			WHERE 
+			FROM REWARD R
+			WHERE
 				기준연도 = TO_CHAR(${year - 1})
 				AND 휴가일수 > 사용일수
 				AND 만료일 >= ${year} || '0101'
+				-- 이미 이월된 건 제외 (재실행 시 중복 방지)
+				AND NOT EXISTS (
+					SELECT 1
+					FROM REWARD C
+					WHERE
+						C.ROOT_IDX = R.IDX
+						AND C.기준연도 = TO_CHAR(${year})
+				)
 		`
     },
 
